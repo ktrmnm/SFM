@@ -5,15 +5,13 @@
 #include <stdexcept>
 #include "core/oracle.h"
 #include "core/set_utils.h"
-#include "core/utils.h"
 
 namespace submodular {
 
 template <typename ValueType>
 class ModularOracle: public SubmodularOracle<ValueType> {
 public:
-  using value_type = typename utils::value_traits<ValueType>::value_type;
-  using rational_type = typename utils::value_traits<ValueType>::rational_type;
+  using value_type = typename ValueTraits<ValueType>::value_type;
 
   ModularOracle(const std::vector<value_type>& x)
     :n_(x.size()), x_(x) { this->SetDomain(Set::MakeDense(n_)); }
@@ -42,8 +40,7 @@ private:
 template <typename ValueType>
 class ConstantOracle: public SubmodularOracle<ValueType> {
 public:
-  using value_type = typename utils::value_traits<ValueType>::value_type;
-  using rational_type = typename utils::value_traits<ValueType>::rational_type;
+  using value_type = typename ValueTraits<ValueType>::value_type;
 
   ConstantOracle(std::size_t n, value_type c): n_(n), c_(c) { this->SetDomain(Set::MakeDense(n_)); }
 

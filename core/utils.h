@@ -5,14 +5,9 @@
 #include <limits>
 #include <algorithm>
 #include <type_traits>
+//#include <chrono>
 
 namespace utils {
-
-template <typename T>
-struct value_traits{
-  using value_type = typename std::enable_if<std::is_arithmetic<T>::value, T>::type;
-  using rational_type = typename std::conditional<std::is_floating_point<T>::value, T, double>::type;
-};
 
 template <typename T, std::enable_if_t<std::is_floating_point<T>::value, std::nullptr_t> = nullptr>
 bool is_abs_close(T a, T b, T abs_tol = T(1e-10)) {

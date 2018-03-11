@@ -9,3 +9,4 @@
 #include "oracles/test_iwata_test_function.h"
 
 // Algorithm tests
+#include "algorithms/test_brute_force.h"

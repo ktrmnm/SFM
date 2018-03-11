@@ -3,17 +3,25 @@
 
 #include <vector>
 #include <utility>
+#include <type_traits>
 #include "core/utils.h"
 #include "core/set_utils.h"
 #include "partial_vector.h"
 
 namespace submodular {
 
+template <typename T>
+struct ValueTraits{
+  using value_type = typename std::enable_if<std::is_arithmetic<T>::value, T>::type;
+  using rational_type = typename std::conditional<std::is_floating_point<T>::value, T, double>::type;
+  using base_type = PartialVector<rational_type>;
+};
+
 template <typename ValueType>
 class SubmodularOracle {
 public:
-  using value_type = typename utils::value_traits<ValueType>::value_type;
-  using rational_type = typename utils::value_traits<ValueType>::rational_type;
+  using value_type = typename ValueTraits<ValueType>::value_type;
+  using rational_type = typename ValueTraits<ValueType>::rational_type;
 
   virtual std::size_t GetN() = 0;
   virtual std::size_t GetNGround() = 0;
@@ -27,12 +35,14 @@ protected:
   Set domain_;
 };
 
+/*
 template <typename OracleType>
 struct OracleTraits {
   using value_type = typename OracleType::value_type;
   using rational_type = typename OracleType::rational_type;
   using base_type = PartialVector<rational_type>;
 };
+*/
 
 }
 

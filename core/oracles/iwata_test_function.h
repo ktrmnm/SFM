@@ -6,15 +6,13 @@
 //#include <numeric>
 #include "core/oracle.h"
 #include "core/set_utils.h"
-#include "core/utils.h"
 
 namespace submodular {
 
 template <typename ValueType>
 class IwataTestFunction: public SubmodularOracle<ValueType> {
 public:
-  using value_type = typename utils::value_traits<ValueType>::value_type;
-  using rational_type = typename utils::value_traits<ValueType>::rational_type;
+  using value_type = typename ValueTraits<ValueType>::value_type;
 
   IwataTestFunction(std::size_t n): n_(n) { this->SetDomain(Set::MakeDense(n_)); }
 

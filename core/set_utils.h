@@ -5,6 +5,7 @@
 #include <utility>
 #include <string>
 #include <stdexcept>
+#include <limits>
 //#include <initializer_list>
 
 namespace submodular {
@@ -36,6 +37,12 @@ public:
   // std::invalid_argument.
   template<class CharT>
   explicit Set(const std::basic_string<CharT>& str);
+
+  // Constructor (d): Construct a Set from a bitmask.
+  // The first M bits are initialized by the corresponding bit values of val,
+  // where M is the number of radix digits of unsigned long type (typically 32 or 64).
+  // If n > M, the remainders are filled by 0.
+  explicit Set(std::size_t n, unsigned long val);
 
   Set& operator=(const Set&) = default;
   Set& operator=(Set&&) = default;
@@ -94,6 +101,14 @@ Set::Set(const std::basic_string<CharT>& str)
     else {
       throw std::invalid_argument("Set::constructor_c");
     }
+  }
+}
+
+Set::Set(std::size_t n, unsigned long val)
+  : n_(n), bits_(n, 0)
+{
+  for (std::size_t i = 0; i < n; ++i) {
+    bits_[i] = (val >> i & 1) == 1 ? 1 : 0;
   }
 }
 

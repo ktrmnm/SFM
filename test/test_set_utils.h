@@ -27,7 +27,10 @@ TEST(Set, ConstructorB) {
   EXPECT_EQ(V[3], 0);
   EXPECT_EQ(V[4], 1);
 
-  EXPECT_THROW(new Set(5, {10}), std::range_error);
+  //EXPECT_THROW(new Set(5, {10}), std::range_error);
+  //NOTE: Set(5, {10}) matches constructor (d), and this test may fail.
+  //In order to avoid such ambiguity, one of these constructors should be depricated.
+  EXPECT_THROW(new Set(5, std::vector<size_t>{10}), std::range_error);
 }
 
 TEST(Set, ConstructorC) {

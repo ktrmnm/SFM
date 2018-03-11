@@ -33,15 +33,15 @@ OrderType GetDescendingOrder(const std::vector<T>& x) {
   return order;
 }
 
-template <typename OracleType>
-auto GreedyBase(OracleType& F, const OrderType& order) {
+template <typename ValueType>
+auto GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
   auto n = F.GetN();
   auto n_ground = F.GetNGround();
   if (order.size() != n) {
     throw std::range_error("GreedyBase:: Domain size mismatch");
   }
   auto base_domain = F.GetDomain();
-  typename OracleTraits<OracleType>::base_type base(base_domain);
+  typename ValueTraits<ValueType>::base_type base(base_domain);
 
   auto X = Set::MakeEmpty(n_ground);
   auto prev = F.Call(X);

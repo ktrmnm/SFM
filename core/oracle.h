@@ -7,7 +7,7 @@
 #include <type_traits>
 #include "core/utils.h"
 #include "core/set_utils.h"
-#include "partial_vector.h"
+#include "core/partial_vector.h"
 
 namespace submodular {
 

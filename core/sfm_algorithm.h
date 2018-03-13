@@ -3,8 +3,8 @@
 
 #include <chrono>
 #include <utility>
-#include "set_utils.h"
-#include "oracle.h"
+#include "core/set_utils.h"
+#include "core/oracle.h"
 
 namespace submodular {
 

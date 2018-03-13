@@ -14,22 +14,11 @@ namespace submodular {
 using OrderType = std::vector<std::size_t>;
 
 template <typename T>
-class IndexCompare {
-public:
-  std::vector<T> x_;
-  IndexCompare() = delete;
-  explicit IndexCompare(const std::vector<T>& x): x_(x) {}
-  bool operator()(std::size_t i, std::size_t j) {
-    return x_.at(i) > x_.at(j);
-  }
-};
-
-template <typename T>
 OrderType GetDescendingOrder(const std::vector<T>& x) {
   IndexCompare<T> comparer(x);
   OrderType order(x.size());
   std::iota(order.begin(), order.end(), 0);
-  std::sort(order.begin(), order.end(), comparer);
+  std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] > x[j]; });
   return order;
 }
 

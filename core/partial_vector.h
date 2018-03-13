@@ -4,7 +4,7 @@
 #include <vector>
 #include <utility>
 #include <stdexcept>
-#include "set_utils.h"
+#include "core/set_utils.h"
 
 namespace submodular {
 

@@ -4,7 +4,8 @@
 
 #include <vector>
 #include <string>
-#include <stdexcept>
+//#include <stdexcept>
+#include <memory>
 #include "core/set_utils.h"
 #include "core/oracle.h"
 #include "core/oracles/modular.h"
@@ -13,7 +14,7 @@ namespace submodular {
 
 TEST(ReducibleOracle, ModularReduction) {
   ModularOracle<int> modular({ 1, 2, 3, 4, 5 });
-  ReducibleOracle<int> F1(&modular);
+  ReducibleOracle<int> F1(modular);
   Set X(std::string("11000"));
   EXPECT_EQ(modular.Call(X), F1.Call(X));
   EXPECT_EQ(F1.GetNGround(), 5);
@@ -26,7 +27,7 @@ TEST(ReducibleOracle, ModularReduction) {
 
 TEST(ReducibleOracle, ModularContraction) {
   ModularOracle<int> modular({ 1, 2, 3, 4, 5 });
-  ReducibleOracle<int> F1(&modular);
+  ReducibleOracle<int> F1(modular);
   Set X1(std::string("11000"));
   EXPECT_EQ(modular.Call(X1), F1.Call(X1));
   EXPECT_EQ(F1.GetNGround(), 5);
@@ -41,7 +42,7 @@ TEST(ReducibleOracle, ModularContraction) {
 
 TEST(ReducibleOracle, ModularShrink) {
   ModularOracle<int> modular({ 1, 2, 3, 4, 5 });
-  ReducibleOracle<int> F1(&modular);
+  ReducibleOracle<int> F1(modular);
   Set X1(std::string("11000"));
   EXPECT_EQ(modular.Call(X1), F1.Call(X1));
   EXPECT_EQ(F1.GetNGround(), 5);

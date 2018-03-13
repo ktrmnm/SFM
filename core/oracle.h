@@ -11,6 +11,9 @@
 
 namespace submodular {
 
+template <typename ValueType> class SubmodularOracle;
+template <typename ValueType> class ReducibleOracle;
+
 template <typename T>
 struct ValueTraits{
   using value_type = typename std::enable_if<std::is_arithmetic<T>::value, T>::type;
@@ -24,8 +27,8 @@ public:
   using value_type = typename ValueTraits<ValueType>::value_type;
   using rational_type = typename ValueTraits<ValueType>::rational_type;
 
-  virtual std::size_t GetN() = 0;
-  virtual std::size_t GetNGround() = 0;
+  virtual std::size_t GetN() const = 0;
+  virtual std::size_t GetNGround() const = 0;
   virtual value_type Call(const Set& X) = 0;
   //value_type operator()(const Set& X) { return Call(X); }
 
@@ -57,16 +60,15 @@ public:
       std::nullptr_t
     > = nullptr
   >
-  explicit ReducibleOracle(RawOracleType* F)
-    : F_original_(F),
-      contracted_(Set::MakeEmpty(F_original_->GetNGround())),
-      partition_(Partition::MakeFine(F_original_->GetNGround())),
+  explicit ReducibleOracle(RawOracleType&& F)
+    : contracted_(Set::MakeEmpty(F.GetNGround())),
+      partition_(Partition::MakeFine(F.GetNGround())),
       offset_(value_type(0))
   {
-    this->SetDomain(F_original_->GetDomain());
+    this->SetDomain(F.GetDomain());
+    F_original_ = std::make_shared<RawOracleType>(std::move(F));
   };
 
-  /*
   template <
     typename RawOracleType,
     std::enable_if_t<
@@ -75,19 +77,18 @@ public:
       std::nullptr_t
     > = nullptr
   >
-  explicit ReducibleOracle(RawOracleType&& F)
-    : original_f_(std::move(F)),
-      contracted_(Set::MakeEmpty(original_f_.GetNGround())),
-      partition_(Partition::MakeFine(original_f_.GetNGround())),
+  explicit ReducibleOracle(const RawOracleType& F)
+    : contracted_(Set::MakeEmpty(F.GetNGround())),
+      partition_(Partition::MakeFine(F.GetNGround())),
       offset_(value_type(0))
   {
-    this->SetDomain(original_f_.GetDomain());
+    this->SetDomain(F.GetDomain());
+    F_original_ = std::make_shared<RawOracleType>(F);
   };
-  */
 
   value_type Call(const Set& X);
-  std::size_t GetN(); // return the cardinality of the domain
-  std::size_t GetNGround(); // return the cardinality of the ground set
+  std::size_t GetN() const; // return the cardinality of the domain
+  std::size_t GetNGround() const; // return the cardinality of the ground set
 
   // Make a reduction
   // The reduction (or restriction) F^A of a submodular function F to A is defined
@@ -114,7 +115,7 @@ public:
   void AddOffset(value_type offset) { offset_ += offset; }
 
 protected:
-  SubmodularOracle<ValueType>* F_original_;
+  std::shared_ptr<SubmodularOracle<ValueType>> F_original_;
   Partition partition_;
   Set contracted_;
   value_type offset_;
@@ -131,12 +132,12 @@ ReducibleOracle<ValueType>::Call(const Set& X) {
 }
 
 template <typename ValueType>
-std::size_t ReducibleOracle<ValueType>::GetN() {
+std::size_t ReducibleOracle<ValueType>::GetN() const {
   return this->domain_.Cardinality();
 }
 
 template <typename ValueType>
-std::size_t ReducibleOracle<ValueType>::GetNGround() {
+std::size_t ReducibleOracle<ValueType>::GetNGround() const {
   return F_original_->GetNGround();
 }
 

@@ -29,8 +29,8 @@ public:
     return value_type(card * (n_ - card) + 2 * card * n_ - 5 * sum);
   }
 
-  std::size_t GetN() { return n_; }
-  std::size_t GetNGround() { return n_; }
+  std::size_t GetN() const { return n_; }
+  std::size_t GetNGround() const { return n_; }
 
 private:
   std::size_t n_;

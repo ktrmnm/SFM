@@ -6,13 +6,18 @@
 #include <string>
 #include <stdexcept>
 #include <limits>
+#include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
 //#include <initializer_list>
 
 namespace submodular {
 
 class Set;
+class Partition;
 bool operator == (const Set& lhs, const Set& rhs);
 bool operator != (const Set& lhs, const Set& rhs);
+
 
 class Set {
 public:
@@ -29,7 +34,7 @@ public:
   // Constructor (b): Construct a Set object from its size and a set of indices
   // in which bits_[i] == 1. If vec contains an index that is larger than n - 1,
   // it throws std::out_of_range.
-  explicit Set(std::size_t n, std::vector<std::size_t> vec);
+  //explicit Set(std::size_t n, std::vector<std::size_t> vec);
   //explicit Set(std::size_t n, std::initializer_list<std::size_t> vec);
 
   // Constructor (c): Construct a Set object from a string object consists of
@@ -50,6 +55,7 @@ public:
   // static factory methods
   static Set MakeDense(std::size_t n);
   static Set MakeEmpty(std::size_t n);
+  static Set FromIndices(std::size_t n, const std::vector<std::size_t>& indices);
 
   bool HasElement(std::size_t pos) const;
   bool operator[] (std::size_t pos) const { return HasElement(pos); }
@@ -74,6 +80,43 @@ public:
   std::vector<char> bits_;
 };
 
+class Partition {
+public:
+  Partition() = default;
+  Partition(const Partition&) = default;
+  Partition(Partition&&) = default;
+  Partition& operator=(const Partition&) = default;
+  Partition& operator=(Partition&&) = default;
+
+  // static method to generate the finest partition {{0}, {1}, ..., {n-1}}
+  static Partition MakeFine(std::size_t n);
+  // static method to generate the coarsest partition {{0, 1, ..., n-1}}
+  //static Partition MakeCoarse(std::size_t n);
+
+  bool HasCell(std::size_t cell) const;
+  std::vector<std::size_t> GetCellIndices() const;
+  std::size_t Cardinality() const;
+
+  // Return a Set object placed at the given cell.
+  // If cell is not found, it returns an empty
+  Set GetCellAsSet(std::size_t cell) const;
+
+  void RemoveCell(std::size_t cell);
+  void MergeCells(std::size_t cell_1, std::size_t cell_2);
+  void MergeCells(const std::vector<std::size_t>& cells);
+  Set Expand() const;
+
+  // (possible largest index of elements) + 1. Do not confuse with Cardinality().
+  std::size_t n_;
+
+  // pairs of {representable elements, cell members}
+  // Cell members are maintained to be sorted as long as change operations are performed
+  // only through the member functions.
+  std::unordered_map<std::size_t, std::vector<std::size_t>> cells_;
+};
+
+
+/*
 Set::Set(std::size_t n, std::vector<std::size_t> vec)
   : n_(n), bits_(n, 0)
 {
@@ -85,6 +128,20 @@ Set::Set(std::size_t n, std::vector<std::size_t> vec)
       bits_[i] = 1;
     }
   }
+}
+*/
+
+Set Set::FromIndices(std::size_t n, const std::vector<std::size_t>& indices) {
+  Set X(n);
+  for (const auto& i: indices) {
+    if (i >= n) {
+      throw std::range_error("Set::FromIndices");
+    }
+    else {
+      X.bits_[i] = 1;
+    }
+  }
+  return X;
 }
 
 template<class CharT>
@@ -203,6 +260,100 @@ bool operator != (const Set& lhs, const Set& rhs) {
   return !(lhs == rhs);
 }
 
+Partition Partition::MakeFine(std::size_t n) {
+  Partition p;
+  p.n_ = n;
+  for (std::size_t cell = 0; cell < n; ++cell) {
+    p.cells_[cell] = std::vector<std::size_t>(1, cell);
+  }
+  return p;
 }
+
+bool Partition::HasCell(std::size_t cell) const {
+  return (cells_.count(cell) == 1);
+}
+
+std::vector<std::size_t> Partition::GetCellIndices() const {
+  std::vector<std::size_t> indices;
+  for (std::size_t cell = 0; cell < n_; ++cell) {
+    if (cells_.count(cell) == 1) {
+      indices.push_back(cell);
+    }
+  }
+  return indices;
+}
+
+std::size_t Partition::Cardinality() const {
+  std::size_t card = 0;
+  for (const auto& kv: cells_) {
+    card += kv.second.size();
+  }
+  return card;
+}
+
+Set Partition::GetCellAsSet(std::size_t cell) const {
+  if (HasCell(cell)) {
+    auto indices = cells_.at(cell);
+    return Set::FromIndices(n_, indices);
+  }
+  else {
+    return Set::MakeEmpty(n_);
+  }
+}
+
+void Partition::RemoveCell(std::size_t cell) {
+  if (HasCell(cell)) {
+    cells_.erase(cells_.find(cell));
+  }
+}
+
+void Partition::MergeCells(std::size_t cell_1, std::size_t cell_2) {
+  if (HasCell(cell_1) && HasCell(cell_2) && cell_1 != cell_2) {
+    auto cell_min = std::min(cell_1, cell_2);
+    auto cell_max = std::max(cell_1, cell_2);
+    auto indices_max = cells_[cell_max];
+    cells_[cell_min].reserve(cells_[cell_min].size() + indices_max.size());
+    for (const auto& i: indices_max) {
+      cells_[cell_min].push_back(i);
+    }
+    std::sort(cells_[cell_min].begin(), cells_[cell_min].end());
+    cells_.erase(cells_.find(cell_max));
+  }
+}
+
+void Partition::MergeCells(const std::vector<std::size_t>& cells) {
+  std::unordered_set<std::size_t> cells_to_merge;
+  std::size_t cell_new = n_;
+  for (const auto& cell: cells) {
+    if (cell < cell_new) {
+      cell_new = cell;
+    }
+    if (HasCell(cell)) {
+      cells_to_merge.insert(cell);
+    }
+  }
+  for (const auto& cell: cells_to_merge) {
+    if (cell != cell_new) {
+      for (const auto& i: cells_[cell]) {
+        cells_[cell_new].push_back(i);
+      }
+      cells_.erase(cells_.find(cell));
+    }
+  }
+  std::sort(cells_[cell_new].begin(), cells_[cell_new].end());
+}
+
+Set Partition::Expand() const {
+  Set X = Set::MakeEmpty(n_);
+  for (const auto& kv: cells_){
+    auto indices = kv.second;
+    for (const auto& i: indices) {
+      X.bits_[i] = 1;
+    }
+  }
+  return X;
+}
+
+}//namespace submodular
 
 #endif

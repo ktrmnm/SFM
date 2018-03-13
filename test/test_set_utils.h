@@ -18,6 +18,7 @@ TEST(Set, ConstructorA) {
   EXPECT_EQ(V[4], 0);
 }
 
+/*
 TEST(Set, ConstructorB) {
   Set V(5, {2, 4});
   EXPECT_EQ(V.n_, 5);
@@ -31,6 +32,19 @@ TEST(Set, ConstructorB) {
   //NOTE: Set(5, {10}) matches constructor (d), and this test may fail.
   //In order to avoid such ambiguity, one of these constructors should be depricated.
   EXPECT_THROW(new Set(5, std::vector<size_t>{10}), std::range_error);
+}
+*/
+
+TEST(Set, FromIndices) {
+  auto V = Set::FromIndices(5, {2, 4});
+  EXPECT_EQ(V.n_, 5);
+  EXPECT_EQ(V[0], 0);
+  EXPECT_EQ(V[1], 0);
+  EXPECT_EQ(V[2], 1);
+  EXPECT_EQ(V[3], 0);
+  EXPECT_EQ(V[4], 1);
+
+  EXPECT_THROW(Set::FromIndices(5, {10}), std::range_error);
 }
 
 TEST(Set, ConstructorC) {
@@ -56,6 +70,27 @@ TEST(Set, Complement) {
 
   auto V3 = ~V1;
   EXPECT_TRUE(V3 == V2);
+}
+
+TEST(Partition, RemoveCell) {
+  Partition p = Partition::MakeFine(5); // p = {{0}, {1}, {2}, {3}, {4}}
+  EXPECT_EQ(Set(std::string("11111")), p.Expand());
+  p.RemoveCell(3); // p = {{0}, {1}, {2}, {4}}
+  EXPECT_EQ(Set(std::string("11101")), p.Expand());
+  p.RemoveCell(0);
+  EXPECT_EQ(Set(std::string("01101")), p.Expand());
+  p.RemoveCell(0); // cell {0} is already removed
+  EXPECT_EQ(Set(std::string("01101")), p.Expand());
+}
+
+TEST(Partition, Merge) {
+  Partition p = Partition::MakeFine(5);
+  p.MergeCells(0, 1);
+  EXPECT_EQ(Set(std::string("11000")), p.GetCellAsSet(0));
+  p.MergeCells({3, 2, 4});
+  EXPECT_EQ(Set(std::string("00111")), p.GetCellAsSet(2));
+  p.RemoveCell(2);
+  EXPECT_EQ(Set(std::string("11000")), p.Expand());
 }
 
 

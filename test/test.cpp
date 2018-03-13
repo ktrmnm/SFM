@@ -5,6 +5,7 @@
 #include "test_base.h"
 
 // Oracle tests
+#include "test_oracle.h"
 #include "oracles/test_modular.h"
 #include "oracles/test_iwata_test_function.h"
 

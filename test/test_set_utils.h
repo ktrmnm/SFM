@@ -62,6 +62,7 @@ TEST(Set, ConstructorC) {
 TEST(Set, Complement) {
   Set V1(std::string("0101100"));
   Set V2(std::string("1010011"));
+  /*
   EXPECT_TRUE(V1 != V2);
   V1.C();
   EXPECT_TRUE(V1 == V2);
@@ -70,6 +71,9 @@ TEST(Set, Complement) {
 
   auto V3 = ~V1;
   EXPECT_TRUE(V3 == V2);
+  */
+  EXPECT_TRUE(V1.Complement() == V2);
+  EXPECT_TRUE(V1.Complement().Complement() == V1);
 }
 
 TEST(Partition, RemoveCell) {

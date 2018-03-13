@@ -63,15 +63,15 @@ public:
   std::vector<std::size_t> GetMembers() const;
   std::size_t Cardinality() const;
   void AddElement(std::size_t pos);
-
-  // Negate the all bits
-  void Complement();
-  void C() { Complement(); }
+  void RemoveElement(std::size_t pos);
 
   // Returns a new copy
   Set Copy() const;
+
   // Returns a new copy of the complement
-  Set operator~() const;
+  Set Complement() const;
+  Set C() const { return Complement(); }
+  //Set operator~() const;
 
   Set Union(const Set& X) const;
   Set Intersection(const Set& X) const;
@@ -102,9 +102,15 @@ public:
   Set GetCellAsSet(std::size_t cell) const;
 
   void RemoveCell(std::size_t cell);
-  void MergeCells(std::size_t cell_1, std::size_t cell_2);
-  void MergeCells(const std::vector<std::size_t>& cells);
+
+  // Merge cells
+  // If merge operation successed, then returns the new cell index.
+  // Otherwise, just returns the minimum existing cell index or n_
+  std::size_t MergeCells(std::size_t cell_1, std::size_t cell_2);
+  std::size_t MergeCells(const std::vector<std::size_t>& cells);
+
   Set Expand() const;
+  Set Expand(const Set& X) const;
 
   // (possible largest index of elements) + 1. Do not confuse with Cardinality().
   std::size_t n_;
@@ -173,20 +179,16 @@ bool Set::HasElement(std::size_t pos) const {
   return static_cast<bool>(bits_[pos]);
 }
 
-void Set::Complement() {
-  for (auto& b: bits_) {
-    b = !b;
-  }
-}
-
 Set Set::Copy() const {
   Set X; X.n_ = n_; X.bits_ = bits_;
   return X;
 }
 
-Set Set::operator~() const {
+Set Set::Complement() const{
   Set X = Copy();
-  X.Complement();
+  for (auto& b: X.bits_) {
+    b = !b;
+  }
   return X;
 }
 
@@ -230,6 +232,10 @@ std::size_t Set::Cardinality() const {
 
 void Set::AddElement(std::size_t pos) {
   bits_.at(pos) = 1;
+}
+
+void Set::RemoveElement(std::size_t pos) {
+  bits_.at(pos) = 0;
 }
 
 Set Set::MakeDense(std::size_t n) {
@@ -307,9 +313,12 @@ void Partition::RemoveCell(std::size_t cell) {
   }
 }
 
-void Partition::MergeCells(std::size_t cell_1, std::size_t cell_2) {
-  if (HasCell(cell_1) && HasCell(cell_2) && cell_1 != cell_2) {
-    auto cell_min = std::min(cell_1, cell_2);
+std::size_t Partition::MergeCells(std::size_t cell_1, std::size_t cell_2) {
+  auto c1 = HasCell(cell_1) ? cell_1 : n_;
+  auto c2 = HasCell(cell_2) ? cell_2 : n_;
+  auto cell_min = std::min(c1, c2);
+
+  if (c1 < n_ && c2 < n_ && cell_1 != cell_2) {
     auto cell_max = std::max(cell_1, cell_2);
     auto indices_max = cells_[cell_max];
     cells_[cell_min].reserve(cells_[cell_min].size() + indices_max.size());
@@ -319,9 +328,11 @@ void Partition::MergeCells(std::size_t cell_1, std::size_t cell_2) {
     std::sort(cells_[cell_min].begin(), cells_[cell_min].end());
     cells_.erase(cells_.find(cell_max));
   }
+
+  return cell_min;
 }
 
-void Partition::MergeCells(const std::vector<std::size_t>& cells) {
+std::size_t Partition::MergeCells(const std::vector<std::size_t>& cells) {
   std::unordered_set<std::size_t> cells_to_merge;
   std::size_t cell_new = n_;
   for (const auto& cell: cells) {
@@ -341,17 +352,32 @@ void Partition::MergeCells(const std::vector<std::size_t>& cells) {
     }
   }
   std::sort(cells_[cell_new].begin(), cells_[cell_new].end());
+  return cell_new;
 }
 
 Set Partition::Expand() const {
-  Set X = Set::MakeEmpty(n_);
+  Set expanded = Set::MakeEmpty(n_);
   for (const auto& kv: cells_){
     auto indices = kv.second;
     for (const auto& i: indices) {
-      X.bits_[i] = 1;
+      expanded.bits_[i] = 1;
     }
   }
-  return X;
+  return expanded;
+}
+
+Set Partition::Expand(const Set& X) const {
+  Set expanded = Set::MakeEmpty(n_);
+  for (const auto& kv: cells_) {
+    auto cell = kv.first;
+    if (X[cell]) {
+      auto indices = kv.second;
+      for (const auto& i: indices) {
+        expanded.bits_[i] = 1;
+      }
+    }
+  }
+  return expanded;
 }
 
 }//namespace submodular

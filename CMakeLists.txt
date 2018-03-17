@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(ENABLE_TESTING  "Enable testing" ON)
 
+include_directories(${PROJECT_SOURCE_DIR}/third_party/eigen3_3_4)
+
 if(ENABLE_TESTING)
   enable_testing()
   add_subdirectory(test)

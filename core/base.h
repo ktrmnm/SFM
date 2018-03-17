@@ -44,6 +44,18 @@ auto GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
   return base;
 }
 
+template <typename ValueType>
+class BaseCombination {
+public:
+  BaseCombination() = delete;
+  BaseCombination(std::size_t n_ground): n_ground_(n_ground) {}
+  
+
+private:
+  std::size_t n_ground_;
+
+};
+
 }
 
 #endif

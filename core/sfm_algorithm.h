@@ -8,6 +8,9 @@
 
 namespace submodular {
 
+template <typename ValueType> class SFMAlgorithm;
+template <typename ValueType> class SFMAlgorithmWithReduction;
+
 struct SimpleTimer {
   static auto Now() { return std::chrono::system_clock::now(); }
 };
@@ -104,6 +107,43 @@ void SFMAlgorithm<ValueType>::IncreaseTotalTime(std::chrono::duration<double> ti
 
 template <typename ValueType>
 void SFMAlgorithm<ValueType>::SetResults(value_type minimum_value, const Set& minimizer) {
+    minimum_value_ = minimum_value;
+    minimizer_ = minimizer;
+    done_sfm_ = true;
+}
+
+template <typename ValueType>
+class SFMAlgorithmWithReduction {
+public:
+  using value_type = typename ValueTraits<ValueType>::value_type;
+
+  SFMAlgorithmWithReduction(): done_sfm_(false) {}
+
+  virtual void Minimize(ReducibleOracle<ValueType>& F) = 0;
+
+  value_type GetMinimumValue();
+  Set GetMinimizer();
+
+protected:
+  bool done_sfm_;
+  value_type minimum_value_;
+  Set minimizer_;
+  void SetResults(value_type minimum_value, const Set& minimizer);
+};
+
+template <typename ValueType>
+typename SFMAlgorithmWithReduction<ValueType>::value_type
+SFMAlgorithmWithReduction<ValueType>::GetMinimumValue() {
+  return minimum_value_;
+}
+
+template <typename ValueType>
+Set SFMAlgorithmWithReduction<ValueType>::GetMinimizer() {
+  return minimizer_;
+}
+
+template <typename ValueType>
+void SFMAlgorithmWithReduction<ValueType>::SetResults(value_type minimum_value, const Set& minimizer) {
     minimum_value_ = minimum_value;
     minimizer_ = minimizer;
     done_sfm_ = true;

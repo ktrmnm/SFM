@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>
 #include <stdexcept>
+#include <algorithm>
 #include "core/set_utils.h"
 
 namespace submodular {
@@ -21,6 +22,10 @@ template <typename T>
 class PartialVector {
 public:
   PartialVector() = delete;
+  PartialVector(const PartialVector&) = default;
+  PartialVector(PartialVector&&) = default;
+  PartialVector& operator=(const PartialVector&) = default;
+  PartialVector& operator=(PartialVector&&) = default;
 
   explicit PartialVector(std::size_t n)
     :n_ground_(n), n_(n), domain_(Set::MakeDense(n)), x_(n, T(0)) {}
@@ -47,12 +52,18 @@ public:
   const T& operator[](std::size_t pos) const noexcept(false);
   T& operator[](std::size_t pos) noexcept(false);
 
+  PartialVector<T>& operator+=(const PartialVector<T>& x);
   PartialVector<T> operator-() const;
   //PartialVector<T> operator+() const;
   PartialVector<T> Multiply(T multiplier) const;
 
   std::vector<T> GetVector() const;
   Set GetDomain() const;
+
+  // Get a "short" re-indexed vector whose length is same as the domain cardinality
+  std::vector<T> GetActiveVector() const;
+  // Set data from a sshort vector
+  void SetActiveVector(const std::vector<T>& data);
 
   // Make sure that x_.size() == n_ground_, domain_.n_ == n_ground_, domain_.Cardinality() == n_
   // (PartialVector object does not check the consistency by itself.)
@@ -76,6 +87,20 @@ T& PartialVector<T>::operator[](std::size_t pos) noexcept(false) {
     throw std::range_error("PartialVector");
   }
   return x_[pos];
+}
+
+template <typename T>
+PartialVector<T>& PartialVector<T>::operator+=(const PartialVector<T>& x) {
+  auto domain_new = domain_.Union(x.domain_);
+  for (const auto& i: domain_new.GetMembers()) {
+    if (domain_[i] && x.domain_[i]) {
+      x_[i] += x.x_[i];
+    }
+    else if (!domain_[i] && x.domain_[i]) {
+      x_[i] = x.x_[i];
+    }
+  }
+  return *this;
 }
 
 template <typename T>
@@ -111,6 +136,24 @@ std::vector<T> PartialVector<T>::GetVector() const {
 template <typename T>
 Set PartialVector<T>::GetDomain() const {
   return domain_.Copy();
+}
+
+template <typename T>
+std::vector<T> PartialVector<T>::GetActiveVector() const {
+  std::vector<T> data;
+  for (const auto& i: domain_.GetMembers()) {
+    data.push_back(x_[i]);
+  }
+  return data;
+}
+
+template <typename T>
+void PartialVector<T>::SetActiveVector(const std::vector<T>& data) {
+  auto members = domain_.GetMembers();
+  auto m = std::min(data.size(), members.size());
+  for (std::size_t i = 0; i < m; ++i) {
+    x_[members[i]] = data[i];
+  }
 }
 
 template <typename T>

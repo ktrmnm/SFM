@@ -49,7 +49,7 @@ template <typename Key, typename T>
 class unordered_map_value_iterator
 #if __cplusplus < 201500
   : std::iterator<
-      typename std::iterator_traits<std::unordered_map<Key, T, Has, Pred, Allocator>::iterator_category, T
+      typename std::iterator_traits<typename std::unordered_map<Key, T>::iterator>::iterator_category, T
     >
 #endif
 {
@@ -58,7 +58,7 @@ private:
   orig_iterator_type it_;
 #if __cplusplus < 201500
   using base_type = std::iterator<
-    typename std::iterator_traits<std::unordered_map<Key, T>::iterator_category, T
+    typename std::iterator_traits<typename std::unordered_map<Key, T>::iterator>::iterator_category, T
   >;
 #endif
 public:

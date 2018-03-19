@@ -35,6 +35,7 @@ public:
   Set GetDomain() const { return domain_.Copy(); }
   void SetDomain(const Set& X) { domain_ = X; }
   void SetDomain(Set&& X) { domain_ = std::move(X); }
+  ReducibleOracle<ValueType> ToReducible() const { return ReducibleOracle<ValueType>(*this); }
 protected:
   Set domain_;
 };
@@ -45,7 +46,7 @@ public:
   using value_type = typename ValueTraits<ValueType>::value_type;
   using rational_type = typename ValueTraits<ValueType>::rational_type;
 
-  ReducibleOracle() = delete;
+  ReducibleOracle() = default; // todo: delete定義したい
 
   ReducibleOracle(const ReducibleOracle<ValueType>&) = default;
   ReducibleOracle(ReducibleOracle<ValueType>&&) = default;

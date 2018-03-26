@@ -1,4 +1,4 @@
-#ifndef GRAPH_H
+head_name#ifndef GRAPH_H
 #define GRAPH_H
 
 #include <iterator>
@@ -59,7 +59,8 @@ struct Node {
   using arc_type = nullptr_t;
   using value_type = ValueType;
   using color_type = NodeColor;
-  std::size_t index;
+  element_type name;
+  //std::size_t index;
   value_type excess;
   NodeColor color;
 };
@@ -98,15 +99,15 @@ public:
   using Arc_s = typename ArcTraits<arc_type>::type_s;
   using Arc_w = typename ArcTraits<arc_type>::type_w;
 
-  using node_iterator = typename utils::unordered_map_value_iterator<std::size_t, Node_s>;
-  using c_node_iterator = const typename utils::unordered_map_value_iterator<std::size_t, Node_s>;
-  using arc_iterator = typename utils::unordered_map_value_iterator<std::size_t, Arc_s>;
-  using c_arc_iterator = const typename utils::unordered_map_value_iterator<std::size_t, Arc_s>;
+  using node_iterator = typename utils::unordered_map_value_iterator<element_type, Node_s>;
+  using c_node_iterator = const typename utils::unordered_map_value_iterator<element_type, Node_s>;
+  using arc_iterator = typename utils::unordered_map_value_iterator<element_type, Arc_s>;
+  using c_arc_iterator = const typename utils::unordered_map_value_iterator<element_type, Arc_s>;
 
 private:
-  std::unordered_map<std::size_t, Node_s> nodes_;
+  std::unordered_map<element_type, Node_s> nodes_;
   //std::vector<Arc_s> arcs_;
-  std::unordered_map<std::size_t, std::unordered_map<std::size_t, Arc_s>> adj_;
+  std::unordered_map<element_type, std::unordered_map<element_type, Arc_s>> adj_;
   value_type tol_;
 
   //std::size_t arc_count_; // used for hash of arc
@@ -123,19 +124,19 @@ public:
 
   // Methods for graph construction
   //void Reserve(std::size_t n, std::size_t m);
-  Node_s AddNode(std::size_t index);
-  void RemoveNode(std::size_t index);
+  Node_s AddNode(element_type name);
+  void RemoveNode(element_type name);
   void AddArc(const Node_s &head, const Node_s &tail, value_type cap);
   void AddArcPair(const Node_s &head, const Node_s &tail, value_type cap, value_type rev_cap);
   //void MakeGraph();
 
   // Methods to get graph information
   std::size_t GetNodeNumber() const { return nodes_.size(); }
-  bool HasNode(std::size_t index) const { return nodes_.count(index) == 1; }
-  Node_s GetNode(std::size_t index) const {
-    return HasNode(index) ? nodes_.at(index) : nullptr;
+  bool HasNode(element_type name) const { return nodes_.count(name) == 1; }
+  Node_s GetNode(element_type name) const {
+    return HasNode(name) ? nodes_.at(name) : nullptr;
   }
-  Arc_s GetArc(std::size_t head_id, std::size_t tail_id);
+  Arc_s GetArc(element_type head_name, element_type tail_name);
   Arc_s GetArc(const Node_s& head, const Node_s& tail);
   bool IsArcAlive(const Arc_s& arc) const {
     return utils::is_abs_close(arc->flow, value_type(0), tol_);
@@ -149,7 +150,7 @@ public:
 
   class node_range {
   public:
-    using orig_iterator = typename std::unordered_map<std::size_t, Node_s>::iterator;
+    using orig_iterator = typename std::unordered_map<element_type, Node_s>::iterator;
   private:
     node_iterator begin_;
     node_iterator end_;
@@ -167,7 +168,7 @@ public:
 
   class arc_range {
   public:
-    using orig_iterator = typename std::unordered_map<std::size_t, Arc_s>::iterator;
+    using orig_iterator = typename std::unordered_map<element_type, Arc_s>::iterator;
   private:
     arc_iterator begin_;
     arc_iterator end_;
@@ -180,23 +181,21 @@ public:
     const arc_iterator& end() const noexcept { return this->end_; }
   };
 
-  arc_range OutArcRange(std::size_t index) noexcept { return arc_range(adj_.at(index).begin(), adj_.at(index).end()); }
-  //const arc_range COutArcRange(std::size_t index) noexcept { return arc_range(adj_[index].begin(), adj_[index].end()); }
-  arc_range OutArcRange(const Node_s& node) noexcept { return OutArcRange(node->index); }
-  //const arc_range COutArcRange(const Node_s& node) noexcept { return OutArcRange(node->index); }
+  arc_range OutArcRange(element_type name) noexcept { return arc_range(adj_.at(name).begin(), adj_.at(name).end()); }
+  arc_range OutArcRange(const Node_s& node) noexcept { return OutArcRange(node->name); }
 };
 
 template <typename ValueType>
-typename SimpleGraph<ValueType>::Node_s SimpleGraph<ValueType>::AddNode(std::size_t index) {
-  if (!HasNode(index)) {
+typename SimpleGraph<ValueType>::Node_s SimpleGraph<ValueType>::AddNode(element_type name) {
+  if (!HasNode(name)) {
     auto node = std::make_shared<node_type>();
-    node->index = index;
+    node->name = name;
     node->excess = 0;
-    nodes_[index] = node;
+    nodes_[name] = node;
     return node;
   }
   else {
-    return nodes_[index];
+    return nodes_[name];
   }
 }
 
@@ -209,7 +208,7 @@ SimpleGraph<ValueType>::MakeArc(const Node_s &head, const Node_s &tail, value_ty
   arc->head_node = head;
   arc->tail_node = tail;
   //arcs_.push_back(arc);
-  arc->hash = head->index;
+  arc->hash = head->name;
   //arc_count_++;
   return arc;
 }
@@ -217,7 +216,7 @@ SimpleGraph<ValueType>::MakeArc(const Node_s &head, const Node_s &tail, value_ty
 template <typename ValueType>
 void SimpleGraph<ValueType>::AddArc(const Node_s &head, const Node_s &tail, value_type cap) {
   auto arc = MakeArc(head, tail, cap);
-  adj_[tail->index][arc->hash] = arc;
+  adj_[tail->name][arc->name] = arc;
 }
 
 template <typename ValueType>
@@ -226,15 +225,15 @@ void SimpleGraph<ValueType>::AddArcPair(const Node_s &head, const Node_s &tail, 
   auto rev = MakeArc(tail, head, rev_cap);
   arc->reversed = rev;
   rev->reversed = arc;
-  adj_[tail->index][arc->hash] = arc;
-  adj_[head->index][rev->hash] = rev;
+  adj_[tail->name][arc->hash] = arc;
+  adj_[head->name][rev->hash] = rev;
 }
 
 template <typename ValueType>
 typename SimpleGraph<ValueType>::Arc_s
-SimpleGraph<ValueType>::GetArc(std::size_t head_id, std::size_t tail_id) {
-  if (HasNode(head_id) && HasNode(tail_id) && adj_[tail_id].count(head_id) == 1) {
-    return adj_[tail_id][head_id];
+SimpleGraph<ValueType>::GetArc(element_type head_name, element_type tail_name) {
+  if (HasNode(head_name) && HasNode(tail_name) && adj_[tail_name].count(head_name) == 1) {
+    return adj_[tail_name][head_name];
   }
   else {
     return nullptr;
@@ -244,19 +243,19 @@ SimpleGraph<ValueType>::GetArc(std::size_t head_id, std::size_t tail_id) {
 template <typename ValueType>
 typename SimpleGraph<ValueType>::Arc_s
 SimpleGraph<ValueType>::GetArc(const Node_s& head, const Node_s& tail) {
-  return GetArc(head->index, tail->index);
+  return GetArc(head->name, tail->name);
 }
 
 template <typename ValueType>
-void SimpleGraph<ValueType>::RemoveNode(std::size_t index) {
-  if (HasNode(index)) {
-    for (auto&& arc: OutArcRange(index)) {
-      auto dst = arc->GetHeadNode()->index;
+void SimpleGraph<ValueType>::RemoveNode(element_type name) {
+  if (HasNode(name)) {
+    for (auto&& arc: OutArcRange(name)) {
+      auto dst = arc->GetHeadNode()->name;
       auto rev_hash = arc->GetReversed()->hash;
       adj_[dst].erase(rev_hash);
     }
-    adj_[index].clear();
-    nodes_.erase(index);
+    adj_[name].clear();
+    nodes_.erase(name);
   }
 }
 
@@ -264,7 +263,7 @@ template <typename ValueType>
 void SimpleGraph<ValueType>::ClearFlow() {
   for (auto&& node: NodeRange()) {
     node->excess = 0;
-    for (auto&& arc: OutArcRange(node->index)) {
+    for (auto&& arc: OutArcRange(node->name)) {
       arc->flow = 0;
     }
   }
@@ -298,11 +297,11 @@ template <typename ValueType>
 SimpleGraph<ValueType> MakeCompleteGraph(const Set& nodes, ValueType cap = 0) {
   SimpleGraph<ValueType> G;
   auto node_ids = nodes.GetMembers();
-  for (const auto& index: node_ids) {
-    G.AddNode(index);
+  for (const auto& name: node_ids) {
+    G.AddNode(name);
   }
-  for (std::size_t i = 0; i < node_ids.size(); ++i) {
-    for (std::size_t j = 0; j < i; ++j) {
+  for (element_type i = 0; i < node_ids.size(); ++i) {
+    for (element_type j = 0; j < i; ++j) {
       auto src = G.GetNode(i);
       auto dst = G.GetNode(j);
       G.AddArcPair(dst, src, cap, cap);
@@ -312,8 +311,8 @@ SimpleGraph<ValueType> MakeCompleteGraph(const Set& nodes, ValueType cap = 0) {
 }
 
 template <typename GraphType>
-std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::size_t start_id) {
-  std::vector<std::size_t> reachable;
+std::vector<element_type> GetReachableIndicesFrom(GraphType& G, element_type start_id) {
+  std::vector<element_type> reachable;
 
   auto start_node = G.GetNode(start_id);
 
@@ -322,7 +321,7 @@ std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::size_t start
       node->color = WHITE;
     }
     start_node->color = BLACK;
-    reachable.push_back(start_node->index);
+    reachable.push_back(start_node->name);
     std::deque<typename GraphTraits<GraphType>::Node_s> Q;
     Q.push_back(start_node);
 
@@ -334,7 +333,7 @@ std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::size_t start
           auto dst = arc->GetHeadNode();
           if (dst->color == WHITE) {
             dst->color = BLACK;
-            reachable.push_back(dst->index);
+            reachable.push_back(dst->name);
             Q.push_back(dst);
           }
         }
@@ -345,8 +344,8 @@ std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::size_t start
 }
 
 template <typename GraphType>
-std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::vector<std::size_t> start_ids) {
-  std::vector<std::size_t> reachable;
+std::vector<element_type> GetReachableIndicesFrom(GraphType& G, std::vector<element_type> start_ids) {
+  std::vector<element_type> reachable;
 
   for (auto&& node: G.NodeRange()) {
     node->color = WHITE;
@@ -356,7 +355,7 @@ std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::vector<std::
     auto start_node = G.GetNode(start_id);
     if (start_node != nullptr && start_node->color == WHITE) {
       start_node->color = BLACK;
-      reachable.push_back(start_node->index);
+      reachable.push_back(start_node->name);
       std::deque<typename GraphTraits<GraphType>::Node_s> Q;
       Q.push_back(start_node);
 
@@ -368,7 +367,7 @@ std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::vector<std::
             auto dst = arc->GetHeadNode();
             if (dst->color == WHITE) {
               dst->color = BLACK;
-              reachable.push_back(dst->index);
+              reachable.push_back(dst->name);
               Q.push_back(dst);
             }
           }
@@ -383,7 +382,7 @@ std::vector<std::size_t> GetReachableIndicesFrom(GraphType& G, std::vector<std::
 template <typename GraphType>
 auto FindSTPath(GraphType& G, const Set& S, const Set& T) {
   std::list<typename GraphTraits<GraphType>::Arc_s> path;
-  std::unordered_map<std::size_t, typename GraphTraits<GraphType>::Arc_s> parent_arc;
+  std::unordered_map<element_type, typename GraphTraits<GraphType>::Arc_s> parent_arc;
 
   for (auto&& node: G.NodeRange()) {
     node->color = WHITE;
@@ -396,7 +395,7 @@ auto FindSTPath(GraphType& G, const Set& S, const Set& T) {
     parent_arc.clear();
     if (start_node != nullptr && start_node->color == WHITE) {
       start_node->color = BLACK;
-      parent_arc[start_node->index] = nullptr;
+      parent_arc[start_node->name] = nullptr;
       std::vector<typename GraphTraits<GraphType>::Node_s> stack;
       stack.push_back(start_node);
 
@@ -409,13 +408,13 @@ auto FindSTPath(GraphType& G, const Set& S, const Set& T) {
 
             if (dst->color == WHITE) {
               dst->color = BLACK;
-              parent_arc[dst->index] = arc;
+              parent_arc[dst->name] = arc;
               stack.push_back(dst);
-              if (T.HasElement(dst->index)) {// make path
-                auto parent = parent_arc[dst->index];
+              if (T.HasElement(dst->name)) {// make path
+                auto parent = parent_arc[dst->name];
                 while (parent != nullptr) {
                   path.push_front(parent);
-                  parent = parent_arc[parent->GetTailNode()->index];
+                  parent = parent_arc[parent->GetTailNode()->name];
                 }
                 return path;
               }// make path
@@ -425,7 +424,7 @@ auto FindSTPath(GraphType& G, const Set& S, const Set& T) {
       }//DFS
     }
   }//for start_ids
-
+  path.clear();
   return path;
 }
 

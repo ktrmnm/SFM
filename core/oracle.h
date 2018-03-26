@@ -17,7 +17,8 @@ template <typename ValueType> class ReducibleOracle;
 template <typename T>
 struct ValueTraits{
   using value_type = typename std::enable_if<std::is_arithmetic<T>::value, T>::type;
-  using rational_type = typename std::conditional<std::is_floating_point<T>::value, T, double>::type;
+  //using rational_type = typename std::conditional<std::is_floating_point<T>::value, T, double>::type;
+  using rational_type = double;
   using base_type = PartialVector<rational_type>;
 };
 

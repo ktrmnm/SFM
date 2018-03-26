@@ -10,6 +10,7 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/QR>
+#include <Eigen/Cholesky>
 
 #include "utils.h"
 
@@ -176,7 +177,30 @@ std::size_t reduce_bases_with_order_swap(std::size_t n, std::vector<std::vector<
   return m; // new number of bases
 }
 
-
+void calc_affine_minimizer(std::size_t n, const std::vector<std::vector<double>>& bases, std::vector<double>& coef,
+                          std::vector<double>& solution) {
+  std::size_t m = bases.size();
+  Eigen::MatrixXd Y = Eigen::MatrixXd::Zero(n, m);
+  for (std::size_t ic = 0; ic < m; ++ic) {
+    for (std::size_t ir = 0; ir < n; ++ir) {
+      Y(ir, ic) = bases[ic][ir];
+    }
+  }
+  Eigen::MatrixXd YTY = Y.transpose() * Y;
+  Eigen::VectorXd ones = Eigen::VectorXd::Ones(m);
+  Eigen::VectorXd alpha = YTY.ldlt().solve(ones);
+  double normalize = alpha.sum();
+  alpha /= normalize;
+  coef.resize(m);
+  for (std::size_t i = 0; i < m; ++i) {
+    coef[i] = alpha(i);
+  }
+  Eigen::VectorXd solvxd = Y * alpha;
+  solution.resize(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    solution[i] = solvxd(i);
+  }
+}
 
 }
 

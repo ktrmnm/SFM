@@ -12,4 +12,5 @@
 
 // Algorithm tests
 #include "algorithms/test_brute_force.h"
-#include "algorithms/test_sfm_iff.h"
+//#include "algorithms/test_sfm_iff.h"
+#include "algorithms/test_sfm_fw.h"

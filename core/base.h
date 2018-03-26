@@ -33,6 +33,21 @@ OrderType GetDescendingOrder(const std::vector<T>& x) {
 }
 
 template <typename T>
+OrderType GetAscendingOrder(const PartialVector<T>& x) {
+  OrderType order = LinearOrder(x.GetDomain());
+  std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] < x[j]; });
+  return order;
+}
+
+template <typename T>
+OrderType GetAscendingOrder(const std::vector<T>& x) {
+  OrderType order(x.size());
+  std::iota(order.begin(), order.end(), 0);
+  std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] < x[j]; });
+  return order;
+}
+
+template <typename T>
 OrderType GetDescendingOrder(const PartialVector<T>& x) {
   OrderType order = LinearOrder(x.GetDomain());
   std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] > x[j]; });
@@ -40,7 +55,8 @@ OrderType GetDescendingOrder(const PartialVector<T>& x) {
 }
 
 template <typename ValueType>
-auto GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
+typename ValueTraits<ValueType>::base_type
+GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
   auto n = F.GetN();
   auto n_ground = F.GetNGround();
   if (order.size() != n) {
@@ -55,11 +71,30 @@ auto GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
   for (const auto& i: order) {
     X.AddElement(i);
     curr = F.Call(X);
-    base[i] = curr - prev;
+    base[i] = static_cast<typename ValueTraits<ValueType>::rational_type>(curr - prev);
     prev = curr;
   }
   return base;
 }
+
+template <typename ValueType>
+typename ValueTraits<ValueType>::base_type
+LinearMinimizer(SubmodularOracle<ValueType>& F,
+                const PartialVector<typename ValueTraits<ValueType>::rational_type>& x)
+{
+  auto order = GetAscendingOrder(x);
+  return GreedyBase(F, order);
+}
+
+template <typename ValueType>
+typename ValueTraits<ValueType>::base_type
+LinearMaximizer(SubmodularOracle<ValueType>& F,
+                const PartialVector<typename ValueTraits<ValueType>::rational_type>& x)
+{
+  auto order = GetDescendingOrder(x);
+  return GreedyBase(F, order);
+}
+
 
 template <typename ValueType>
 class BaseCombination {
@@ -160,8 +195,8 @@ void BaseCombination<ValueType>::Reduce() {
   Y.reserve(bases_.size());
   for (std::size_t i = 0; i < bases_.size(); ++i) {
     auto data = bases_[i].GetActiveVector();
-    std::vector<double> data_d(data.begin(), data.end());
-    Y.push_back(std::move(data_d));
+    //std::vector<double> data_d(data.begin(), data.end());
+    Y.push_back(std::move(data));
   }
   std::vector<double> C(coeffs_.begin(), coeffs_.end());
   std::vector<OrderType> orders(orders_);
@@ -172,8 +207,8 @@ void BaseCombination<ValueType>::Reduce() {
   orders_.clear();
   for (std::size_t i = 0; i < m; ++i) {
     base_type base(domain_);
-    std::vector<rational_type> data(Y[i].begin(), Y[i].end());
-    base.SetActiveVector(data);
+    //std::vector<rational_type> data(Y[i].begin(), Y[i].end());
+    base.SetActiveVector(Y[i]);
     AddTriple(std::move(orders[i]), std::move(base), C[i]);
   }
 }

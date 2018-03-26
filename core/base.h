@@ -9,6 +9,7 @@
 #include "core/set_utils.h"
 #include "core/oracle.h"
 #include "core/linalg.h"
+#include "core/reporter.h"
 
 namespace submodular {
 
@@ -78,7 +79,11 @@ OrderType GetAscendingOrder(const std::vector<T>& x) {
 
 template <typename ValueType>
 typename ValueTraits<ValueType>::base_type
-GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
+GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order, SFMReporter* reporter = nullptr) {
+  if (reporter != nullptr) {
+    reporter->TimerStart(ReportKind::BASE);
+  }
+
   auto n = F.GetN();
   auto n_ground = F.GetNGround();
   if (order.size() != n) {
@@ -88,20 +93,31 @@ GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
   typename ValueTraits<ValueType>::base_type base(base_domain);
 
   auto X = Set::MakeEmpty(n_ground);
-  auto prev = F.Call(X);
+  auto prev = F.Call(X, reporter);
   auto curr = prev;
   for (const auto& i: order) {
     X.AddElement(i);
-    curr = F.Call(X);
+    curr = F.Call(X, reporter);
     base[i] = static_cast<typename ValueTraits<ValueType>::rational_type>(curr - prev);
     prev = curr;
+  }
+
+  if (reporter != nullptr) {
+    reporter->TimerStop(ReportKind::BASE);
+    reporter->IncreaseCount(ReportKind::BASE);
   }
   return base;
 }
 
 template <typename ValueType>
 std::vector<typename ValueTraits<ValueType>::rational_type>
-GreedyBaseData(SubmodularOracle<ValueType>& F, const OrderType& order, const std::vector<std::size_t>& inverse) {
+GreedyBaseData(SubmodularOracle<ValueType>& F, const OrderType& order, const std::vector<std::size_t>& inverse,
+              SFMReporter* reporter = nullptr)
+{
+  if (reporter != nullptr) {
+    reporter->TimerStart(ReportKind::BASE);
+  }
+
   auto n = F.GetN();
   auto n_ground = F.GetNGround();
   if (order.size() != n) {
@@ -110,13 +126,18 @@ GreedyBaseData(SubmodularOracle<ValueType>& F, const OrderType& order, const std
   std::vector<typename ValueTraits<ValueType>::rational_type> base_data(n);
 
   auto X = Set::MakeEmpty(n_ground);
-  auto prev = F.Call(X);
+  auto prev = F.Call(X, reporter);
   auto curr = prev;
   for (const auto& i: order) {
     X.AddElement(i);
-    curr = F.Call(X);
+    curr = F.Call(X, reporter);
     base_data[inverse[i]] = static_cast<typename ValueTraits<ValueType>::rational_type>(curr - prev);
     prev = curr;
+  }
+
+  if (reporter != nullptr) {
+    reporter->TimerStop(ReportKind::BASE);
+    reporter->IncreaseCount(ReportKind::BASE);
   }
   return base_data;
 }
@@ -124,39 +145,41 @@ GreedyBaseData(SubmodularOracle<ValueType>& F, const OrderType& order, const std
 template <typename ValueType>
 typename ValueTraits<ValueType>::base_type
 LinearMinimizer(SubmodularOracle<ValueType>& F,
-                const std::vector<typename ValueTraits<ValueType>::rational_type>& x)
+                const std::vector<typename ValueTraits<ValueType>::rational_type>& x, SFMReporter* reporter = nullptr)
 {
   auto order = GetAscendingOrder(x);
-  return GreedyBase(F, order);
+  return GreedyBase(F, order, reporter);
 }
 
 template <typename ValueType>
 std::vector<typename ValueTraits<ValueType>::rational_type>
 LinearMinimizerData(SubmodularOracle<ValueType>& F,
                 const std::vector<typename ValueTraits<ValueType>::rational_type>& x_data,
-                const std::vector<element_type>& members, const std::vector<std::size_t>& inverse)
+                const std::vector<element_type>& members, const std::vector<std::size_t>& inverse,
+                SFMReporter* reporter = nullptr)
 {
   auto order = GetAscendingOrder(x_data, members, inverse);
-  return GreedyBaseData(F, order, inverse);
+  return GreedyBaseData(F, order, inverse, reporter);
 }
 
 template <typename ValueType>
 typename ValueTraits<ValueType>::base_type
 LinearMaximizer(SubmodularOracle<ValueType>& F,
-                const PartialVector<typename ValueTraits<ValueType>::rational_type>& x)
+                const PartialVector<typename ValueTraits<ValueType>::rational_type>& x, SFMReporter* reporter = nullptr)
 {
   auto order = GetDescendingOrder(x);
-  return GreedyBase(F, order);
+  return GreedyBase(F, order, reporter);
 }
 
 template <typename ValueType>
 std::vector<typename ValueTraits<ValueType>::rational_type>
 LinearMaximizerData(SubmodularOracle<ValueType>& F,
                 const std::vector<typename ValueTraits<ValueType>::rational_type>& x_data,
-                const std::vector<element_type>& members, const std::vector<std::size_t>& inverse)
+                const std::vector<element_type>& members, const std::vector<std::size_t>& inverse,
+                SFMReporter* reporter = nullptr)
 {
   auto order = GetDescendingOrder(x_data, members, inverse);
-  return GreedyBaseData(F, order, inverse);
+  return GreedyBaseData(F, order, inverse, reporter);
 }
 
 

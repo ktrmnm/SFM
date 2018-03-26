@@ -8,6 +8,7 @@
 #include "core/utils.h"
 #include "core/set_utils.h"
 #include "core/partial_vector.h"
+#include "core/reporter.h"
 
 namespace submodular {
 
@@ -31,7 +32,18 @@ public:
   virtual std::size_t GetN() const = 0;
   virtual std::size_t GetNGround() const = 0;
   virtual value_type Call(const Set& X) = 0;
-  //value_type operator()(const Set& X) { return Call(X); }
+
+  value_type Call(const Set& X, SFMReporter* reporter) {
+    if (reporter != nullptr) {
+      reporter->TimerStart(ReportKind::ORACLE);
+    }
+    auto ret = Call(X);
+    if (reporter != nullptr) {
+      reporter->TimerStop(ReportKind::ORACLE);
+      reporter->IncreaseCount(ReportKind::ORACLE);
+    }
+    return ret;
+  }
 
   Set GetDomain() const { return domain_.Copy(); }
   void SetDomain(const Set& X) { domain_ = X; }

@@ -5,23 +5,12 @@
 #include <utility>
 #include "core/set_utils.h"
 #include "core/oracle.h"
+#include "core/reporter.h"
 
 namespace submodular {
 
 template <typename ValueType> class SFMAlgorithm;
 template <typename ValueType> class SFMAlgorithmWithReduction;
-
-struct SimpleTimer {
-  static auto Now() { return std::chrono::system_clock::now(); }
-};
-
-struct SFMStats {
-  unsigned int oracle_calls; // number of oracle calls
-  unsigned int base_calls; // number of base calls
-  std::chrono::milliseconds oracle_time; // time spent by oracle calls
-  std::chrono::milliseconds base_time; // time spent by base calls
-  std::chrono::milliseconds total_time; // time spent by overall calculation
-};
 
 // Base class of SFM algorithms
 template <typename ValueType>
@@ -39,19 +28,14 @@ public:
 
   value_type GetMinimumValue();
   Set GetMinimizer();
-  SFMStats GetStats();
+  SFMReporter GetReporter();
 
 protected:
   bool done_sfm_;
-  SFMStats stats_;
+  SFMReporter reporter_;
   value_type minimum_value_;
   Set minimizer_;
-  void ClearStats();
-  void IncreaseOracleCount(unsigned int count);
-  void IncreaseBaseCount(unsigned int count);
-  void IncreaseOracleTime(std::chrono::duration<double> time_delta);
-  void IncreaseBaseTime(std::chrono::duration<double> time_delta);
-  void IncreaseTotalTime(std::chrono::duration<double> time_delta);
+  void ClearReports();
   void SetResults(value_type minimum_value, const Set& minimizer);
 };
 
@@ -67,42 +51,13 @@ Set SFMAlgorithm<ValueType>::GetMinimizer() {
 }
 
 template <typename ValueType>
-SFMStats SFMAlgorithm<ValueType>::GetStats() {
-  return stats_;
+SFMReporter SFMAlgorithm<ValueType>::GetReporter() {
+  return reporter_;
 }
 
 template <typename ValueType>
-void SFMAlgorithm<ValueType>::ClearStats() {
-  stats_.oracle_calls = 0;
-  stats_.base_calls = 0;
-  stats_.oracle_time = std::chrono::milliseconds::zero();
-  stats_.base_time = std::chrono::milliseconds::zero();
-  stats_.total_time = std::chrono::milliseconds::zero();
-}
-
-template <typename ValueType>
-void SFMAlgorithm<ValueType>::IncreaseOracleCount(unsigned int count) {
-  stats_.oracle_calls += count;
-}
-
-template <typename ValueType>
-void SFMAlgorithm<ValueType>::IncreaseBaseCount(unsigned int count) {
-  stats_.base_calls += count;
-}
-
-template <typename ValueType>
-void SFMAlgorithm<ValueType>::IncreaseOracleTime(std::chrono::duration<double> time_delta) {
-  stats_.oracle_time += std::chrono::duration_cast<std::chrono::milliseconds>(time_delta);
-}
-
-template <typename ValueType>
-void SFMAlgorithm<ValueType>::IncreaseBaseTime(std::chrono::duration<double> time_delta) {
-  stats_.base_time += std::chrono::duration_cast<std::chrono::milliseconds>(time_delta);
-}
-
-template <typename ValueType>
-void SFMAlgorithm<ValueType>::IncreaseTotalTime(std::chrono::duration<double> time_delta) {
-  stats_.total_time += std::chrono::duration_cast<std::chrono::milliseconds>(time_delta);
+void SFMAlgorithm<ValueType>::ClearReports() {
+  reporter_.Clear();
 }
 
 template <typename ValueType>
@@ -123,11 +78,14 @@ public:
 
   value_type GetMinimumValue();
   Set GetMinimizer();
+  SFMReporter GetReporter();
 
 protected:
   bool done_sfm_;
   value_type minimum_value_;
+  SFMReporter reporter_;
   Set minimizer_;
+  void ClearReports();
   void SetResults(value_type minimum_value, const Set& minimizer);
 };
 
@@ -147,6 +105,16 @@ void SFMAlgorithmWithReduction<ValueType>::SetResults(value_type minimum_value, 
     minimum_value_ = minimum_value;
     minimizer_ = minimizer;
     done_sfm_ = true;
+}
+
+template <typename ValueType>
+SFMReporter SFMAlgorithmWithReduction<ValueType>::GetReporter() {
+  return reporter_;
+}
+
+template <typename ValueType>
+void SFMAlgorithmWithReduction<ValueType>::ClearReports() {
+  reporter_.Clear();
 }
 
 }

@@ -136,22 +136,32 @@ void FWRobust<ValueType>::FWUpdate(const base_type& q) {
 
 template <typename ValueType>
 void FWRobust<ValueType>::Minimize(SubmodularOracle<ValueType>& F) {
+  this->reporter_.EntryTimer(ReportKind::TOTAL);
+  this->reporter_.EntryTimer(ReportKind::ORACLE);
+  this->reporter_.EntryCounter(ReportKind::ORACLE);
+  this->reporter_.EntryTimer(ReportKind::BASE);
+  this->reporter_.EntryCounter(ReportKind::BASE);
+
+  this->reporter_.TimerStart(ReportKind::TOTAL);
+
   Initialize(F);
 
   auto order = LinearOrder(domain_);
-  x_data_ = std::move(GreedyBaseData(F, order, inverse_));
+  x_data_ = std::move(GreedyBaseData(F, order, inverse_, &(this->reporter_)));
   bases_.push_back(x_data_);
   coeffs_.emplace_back(1);
 
-  base_type vertex_new = std::move(LinearMinimizerData(F, x_data_, members_, inverse_)); // ++base call
+  base_type vertex_new = std::move(LinearMinimizerData(F, x_data_, members_, inverse_, &(this->reporter_)));
 
   while (!CheckNorm(vertex_new)) {
     FWUpdate(vertex_new);
-    vertex_new = std::move(LinearMinimizerData(F, x_data_, members_, inverse_)); // ++base call
+    vertex_new = std::move(LinearMinimizerData(F, x_data_, members_, inverse_, &(this->reporter_)));
   }
 
   auto X = GetX();
-  auto minimum_value = F.Call(X);
+  auto minimum_value = F.Call(X, &(this->reporter_));
+
+  this->reporter_.TimerStop(ReportKind::TOTAL);
   this->SetResults(minimum_value, X);
 }
 

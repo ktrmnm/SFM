@@ -18,6 +18,7 @@ class Partition;
 bool operator == (const Set& lhs, const Set& rhs);
 bool operator != (const Set& lhs, const Set& rhs);
 
+using element_type = std::size_t;
 
 class Set {
 public:
@@ -55,15 +56,16 @@ public:
   // static factory methods
   static Set MakeDense(std::size_t n);
   static Set MakeEmpty(std::size_t n);
-  static Set FromIndices(std::size_t n, const std::vector<std::size_t>& indices);
+  static Set FromIndices(std::size_t n, const std::vector<element_type>& indices);
 
-  bool HasElement(std::size_t pos) const;
-  bool operator[] (std::size_t pos) const { return HasElement(pos); }
+  bool HasElement(element_type i) const;
+  bool operator[] (element_type i) const { return HasElement(i); }
 
-  std::vector<std::size_t> GetMembers() const;
+  std::vector<element_type> GetMembers() const;
+  std::vector<std::size_t> GetInverseMap() const;
   std::size_t Cardinality() const;
-  void AddElement(std::size_t pos);
-  void RemoveElement(std::size_t pos);
+  void AddElement(element_type i);
+  void RemoveElement(element_type i);
 
   // Returns a new copy
   Set Copy() const;
@@ -137,7 +139,7 @@ Set::Set(std::size_t n, std::vector<std::size_t> vec)
 }
 */
 
-Set Set::FromIndices(std::size_t n, const std::vector<std::size_t>& indices) {
+Set Set::FromIndices(std::size_t n, const std::vector<element_type>& indices) {
   Set X(n);
   for (const auto& i: indices) {
     if (i >= n) {
@@ -175,8 +177,8 @@ Set::Set(std::size_t n, unsigned long val)
   }
 }
 
-bool Set::HasElement(std::size_t pos) const {
-  return static_cast<bool>(bits_[pos]);
+bool Set::HasElement(element_type i) const {
+  return static_cast<bool>(bits_[i]);
 }
 
 Set Set::Copy() const {
@@ -212,14 +214,31 @@ Set Set::Intersection(const Set& X) const {
   return X_new;
 }
 
-std::vector<std::size_t> Set::GetMembers() const {
-  std::vector<std::size_t> members;
+std::vector<element_type> Set::GetMembers() const {
+  std::vector<element_type> members;
   for (std::size_t i = 0; i < n_; ++i) {
     if (HasElement(i)) {
       members.push_back(i);
     }
   }
   return members;
+}
+
+// NOTE: this is used as follows:
+// auto members = X.GetMembers(); auto inverse = X.GetInverseMap();
+// for (element_type i: members) {
+//   assert(i == members[inverse[i]]);
+// }
+std::vector<std::size_t> Set::GetInverseMap() const {
+  std::vector<std::size_t> inverse(n_, n_);
+  std::size_t pos = 0;
+  for (std::size_t i = 0; i < n_; ++i) {
+    if (HasElement(i)) {
+      inverse[i] = pos;
+      pos++;
+    }
+  }
+  return inverse;
 }
 
 std::size_t Set::Cardinality() const {
@@ -230,12 +249,12 @@ std::size_t Set::Cardinality() const {
   return c;
 }
 
-void Set::AddElement(std::size_t pos) {
-  bits_.at(pos) = 1;
+void Set::AddElement(element_type i) {
+  bits_.at(i) = 1;
 }
 
-void Set::RemoveElement(std::size_t pos) {
-  bits_.at(pos) = 0;
+void Set::RemoveElement(element_type i) {
+  bits_.at(i) = 0;
 }
 
 Set Set::MakeDense(std::size_t n) {

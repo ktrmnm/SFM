@@ -20,10 +20,11 @@ class FWRobust: public SFMAlgorithm<ValueType> {
 public:
   using value_type = typename ValueTraits<ValueType>::value_type;
   using rational_type = typename ValueTraits<ValueType>::rational_type;
-  using base_type = typename ValueTraits<ValueType>::base_type;
+  //using base_type = typename ValueTraits<ValueType>::base_type;
+  using base_type = std::vector<rational_type>;
 
-  FWRobust(): precision_(0.5), tol_(1e-10), x_(0) {}
-  explicit FWRobust(rational_type precision): precision_(precision), tol_(1e-10), x_(0) {}
+  FWRobust(): precision_(0.5), tol_(1e-10), x_data_(0) {}
+  explicit FWRobust(rational_type precision): precision_(precision), tol_(1e-10), x_data_(0) {}
 
   void Minimize(SubmodularOracle<ValueType>& F);
 
@@ -34,9 +35,7 @@ private:
   rational_type eps_;
   rational_type tol_;
 
-  base_type x_; // x
-  //base_type q_;
-  //BaseCombination<ValueType> combination_;
+  base_type x_data_; // x
   std::vector<base_type> bases_;
   std::vector<rational_type> coeffs_;
   std::vector<rational_type> y_;
@@ -44,6 +43,8 @@ private:
   std::size_t n_;
   std::size_t n_ground_;
   Set domain_;
+  std::vector<element_type> members_;
+  std::vector<std::size_t> inverse_;
 
   void Initialize(SubmodularOracle<ValueType>& F);
   bool CheckNorm(const base_type& q);
@@ -57,6 +58,8 @@ private:
 template <typename ValueType>
 void FWRobust<ValueType>::Initialize(SubmodularOracle<ValueType>& F) {
   domain_ = std::move(F.GetDomain());
+  members_ = std::move(domain_.GetMembers());
+  inverse_ = std::move(domain_.GetInverseMap());
   n_ = F.GetN();
   n_ground_ = F.GetNGround();
   bases_.clear();
@@ -68,10 +71,9 @@ void FWRobust<ValueType>::Initialize(SubmodularOracle<ValueType>& F) {
 
 template <typename ValueType>
 bool FWRobust<ValueType>::CheckNorm(const base_type& q) {
-  auto members = domain_.GetMembers();
   rational_type diff(0); // <x, x - q>
-  for (const auto& i: members) {
-    diff += x_[i] * (x_[i] - q[i]);
+  for (const auto& i: members_) {
+    diff += x_data_[inverse_[i]] * (x_data_[inverse_[i]] - q[inverse_[i]]);
   }
   return diff <= eps_ * eps_;
 }
@@ -89,14 +91,7 @@ bool FWRobust<ValueType>::IsConvexCombination(const std::vector<rational_type>& 
 
 template <typename ValueType>
 void FWRobust<ValueType>::CalcAffineMinimizer() {
-  std::vector<std::vector<double>> Y;
-  Y.reserve(bases_.size());
-  for (std::size_t i = 0; i < bases_.size(); ++i) {
-    auto data = bases_[i].GetActiveVector();
-    //std::vector<double> data_d(data.begin(), data.end());
-    Y.push_back(std::move(data));
-  }
-  linalg::calc_affine_minimizer(n_, Y, alpha_, y_);
+  linalg::calc_affine_minimizer(n_, bases_, alpha_, y_); // alpha_ and y_ are changed
 }
 
 template <typename ValueType>
@@ -136,7 +131,7 @@ void FWRobust<ValueType>::FWUpdate(const base_type& q) {
     }
   }//minor cycle
 
-  x_.SetActiveVector(y_);
+  x_data_ = y_;
 }
 
 template <typename ValueType>
@@ -144,18 +139,15 @@ void FWRobust<ValueType>::Minimize(SubmodularOracle<ValueType>& F) {
   Initialize(F);
 
   auto order = LinearOrder(domain_);
-  x_ = std::move(GreedyBase(F, order));
-  bases_.push_back(x_);
+  x_data_ = std::move(GreedyBaseData(F, order, inverse_));
+  bases_.push_back(x_data_);
   coeffs_.emplace_back(1);
 
-  base_type vertex_new = std::move(LinearMinimizer(F, x_)); // ++base call
+  base_type vertex_new = std::move(LinearMinimizerData(F, x_data_, members_, inverse_)); // ++base call
 
-  int work_count = 0;
   while (!CheckNorm(vertex_new)) {
-    //std::cout << "work_count = " << work_count << std::endl;
     FWUpdate(vertex_new);
-    vertex_new = std::move(LinearMinimizer(F, x_)); // ++base call
-    //work_count++;
+    vertex_new = std::move(LinearMinimizerData(F, x_data_, members_, inverse_)); // ++base call
   }
 
   auto X = GetX();
@@ -165,11 +157,12 @@ void FWRobust<ValueType>::Minimize(SubmodularOracle<ValueType>& F) {
 
 template <typename ValueType>
 Set FWRobust<ValueType>::GetX() const {
-  auto order = GetAscendingOrder(x_);
+  auto order = GetAscendingOrder(x_data_, members_, inverse_);
   Set X = Set::MakeEmpty(n_ground_);
   for (std::size_t i = 0; i < order.size() - 1; ++i) {
     X.AddElement(order[i]);
-    if (x_[order[i + 1]] >= 0 && static_cast<rational_type>(n_ * (x_[order[i + 1]] - x_[order[i]])) >= eps_) {
+    if (x_data_[inverse_[order[i + 1]]] >= 0
+        && static_cast<rational_type>(n_ * (x_data_[inverse_[order[i + 1]]] - x_data_[inverse_[order[i]]])) >= eps_) {
       break;
     }
   }

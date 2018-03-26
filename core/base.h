@@ -33,9 +33,38 @@ OrderType GetDescendingOrder(const std::vector<T>& x) {
 }
 
 template <typename T>
+OrderType GetDescendingOrder(const std::vector<T>& x_data,
+                            const std::vector<element_type>& members, const std::vector<std::size_t>& inverse)
+{
+  OrderType order(members);
+  std::sort(order.begin(), order.end(), [&](element_type i, element_type j){
+    return x_data[inverse[i]] > x_data[inverse[j]];
+  });
+  return order;
+}
+
+template <typename T>
+OrderType GetDescendingOrder(const PartialVector<T>& x) {
+  OrderType order = LinearOrder(x.GetDomain());
+  std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] > x[j]; });
+  return order;
+}
+
+template <typename T>
 OrderType GetAscendingOrder(const PartialVector<T>& x) {
   OrderType order = LinearOrder(x.GetDomain());
   std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] < x[j]; });
+  return order;
+}
+
+template <typename T>
+OrderType GetAscendingOrder(const std::vector<T>& x_data,
+                            const std::vector<element_type>& members, const std::vector<std::size_t>& inverse)
+{
+  OrderType order(members);
+  std::sort(order.begin(), order.end(), [&](element_type i, element_type j){
+    return x_data[inverse[i]] < x_data[inverse[j]];
+  });
   return order;
 }
 
@@ -44,13 +73,6 @@ OrderType GetAscendingOrder(const std::vector<T>& x) {
   OrderType order(x.size());
   std::iota(order.begin(), order.end(), 0);
   std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] < x[j]; });
-  return order;
-}
-
-template <typename T>
-OrderType GetDescendingOrder(const PartialVector<T>& x) {
-  OrderType order = LinearOrder(x.GetDomain());
-  std::sort(order.begin(), order.end(), [&](std::size_t i, std::size_t j){ return x[i] > x[j]; });
   return order;
 }
 
@@ -78,12 +100,44 @@ GreedyBase(SubmodularOracle<ValueType>& F, const OrderType& order) {
 }
 
 template <typename ValueType>
+std::vector<typename ValueTraits<ValueType>::rational_type>
+GreedyBaseData(SubmodularOracle<ValueType>& F, const OrderType& order, const std::vector<std::size_t>& inverse) {
+  auto n = F.GetN();
+  auto n_ground = F.GetNGround();
+  if (order.size() != n) {
+    throw std::range_error("GreedyBase:: Domain size mismatch");
+  }
+  std::vector<typename ValueTraits<ValueType>::rational_type> base_data(n);
+
+  auto X = Set::MakeEmpty(n_ground);
+  auto prev = F.Call(X);
+  auto curr = prev;
+  for (const auto& i: order) {
+    X.AddElement(i);
+    curr = F.Call(X);
+    base_data[inverse[i]] = static_cast<typename ValueTraits<ValueType>::rational_type>(curr - prev);
+    prev = curr;
+  }
+  return base_data;
+}
+
+template <typename ValueType>
 typename ValueTraits<ValueType>::base_type
 LinearMinimizer(SubmodularOracle<ValueType>& F,
-                const PartialVector<typename ValueTraits<ValueType>::rational_type>& x)
+                const std::vector<typename ValueTraits<ValueType>::rational_type>& x)
 {
   auto order = GetAscendingOrder(x);
   return GreedyBase(F, order);
+}
+
+template <typename ValueType>
+std::vector<typename ValueTraits<ValueType>::rational_type>
+LinearMinimizerData(SubmodularOracle<ValueType>& F,
+                const std::vector<typename ValueTraits<ValueType>::rational_type>& x_data,
+                const std::vector<element_type>& members, const std::vector<std::size_t>& inverse)
+{
+  auto order = GetAscendingOrder(x_data, members, inverse);
+  return GreedyBaseData(F, order, inverse);
 }
 
 template <typename ValueType>
@@ -93,6 +147,16 @@ LinearMaximizer(SubmodularOracle<ValueType>& F,
 {
   auto order = GetDescendingOrder(x);
   return GreedyBase(F, order);
+}
+
+template <typename ValueType>
+std::vector<typename ValueTraits<ValueType>::rational_type>
+LinearMaximizerData(SubmodularOracle<ValueType>& F,
+                const std::vector<typename ValueTraits<ValueType>::rational_type>& x_data,
+                const std::vector<element_type>& members, const std::vector<std::size_t>& inverse)
+{
+  auto order = GetDescendingOrder(x_data, members, inverse);
+  return GreedyBaseData(F, order, inverse);
 }
 
 

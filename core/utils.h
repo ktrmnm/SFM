@@ -42,6 +42,27 @@ bool is_close(T a, T b, T abs_tol = 0, T rel_tol = 0) {
   return a == b;
 }
 
+template <
+  typename T,
+  std::enable_if_t<std::is_floating_point<T>::value, std::nullptr_t> = nullptr
+>
+T abs_max(std::vector<T> x) {
+  auto z = *std::max_element(x.begin(), x.end(),
+                            [](const T& a, const T& b){ return std::fabs(a) < std::fabs(b); });
+  return fabs(z);
+}
+
+template <
+  typename T,
+  std::enable_if_t<std::is_integral<T>::value, std::nullptr_t> = nullptr
+>
+double abs_max(std::vector<T> x) {
+  auto z = *std::max_element(x.begin(), x.end(),
+                            [](const T& a, const T& b){ return std::fabs(a) < std::fabs(b); });
+  return fabs(z);
+}
+
+
 //template<typename Key, typename T,
 //        typename Hash = std::hash<Key>, typename Pred = std::equal_to<Key>,
 //        typename Allocator = std::allocator<std::pair<const Key, T>>>

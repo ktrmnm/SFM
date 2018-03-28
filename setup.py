@@ -26,9 +26,9 @@ extensions = [
 setup(
     name = 'pysfm',
     author = 'Kentaro Minami',
-    author_email = '',
-    url = '',
-    license = '',
+    author_email = 'kentaro.minami1991@gmail.com',
+    url = 'https://github.com/ktrmnm/SFM',
+    license = 'Apache License Version 2.0',
     description = 'Submodular function optimization package',
     long_description = '',
     packages = ['pysfm'],
@@ -38,6 +38,7 @@ setup(
         'Development Status :: 1 - Planning',
         'Programming Language :: C++',
         'Programming Language :: Python :: 3.6',
-        'Topic :: Scientific/Engineering :: Mathematics'
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'License :: OSI Approved :: Apache Software License'
     ]
 )

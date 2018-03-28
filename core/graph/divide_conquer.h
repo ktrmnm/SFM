@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "core/utils.h"
-#include "core/oracles.h"
+#include "core/oracle.h"
 #include "core/set_utils.h"
 #include "core/partial_vector.h"
 #include "core/graph/generalized_cut.h"
@@ -32,7 +32,7 @@ private:
 };
 
 template <typename ValueType>
-DivideConquerMNP<ValueType>::base_type
+typename DivideConquerMNP<ValueType>::base_type
 DivideConquerMNP<ValueType>::Solve(GeneralizedCutOracle<ValueType>& F) {
   auto n = F.GetN();
   auto domain = F.GetDomain();
@@ -59,7 +59,7 @@ void DivideConquerMNP<ValueType>::Slice(GeneralizedCutOracle<ValueType>& F, std:
     F.AddCardinalityFunction(-alpha);
     auto fc_minimum_value = static_cast<rational_type>(F.GetMinimumValue());
     auto fc_minimizer_ids = F.GetMinimizerIds();
-    F_.AddCardinalityFunction(alpha);
+    F.AddCardinalityFunction(alpha);
 
     if (utils::is_abs_close(fc_minimum_value, 0.0, tol_)) {
       for (const auto& i: indices) {
@@ -76,7 +76,7 @@ void DivideConquerMNP<ValueType>::Slice(GeneralizedCutOracle<ValueType>& F, std:
 
       if (indices.size() - fc_minimizer_ids.size() > 0) {
         auto state = F.GetState();
-        auto F_A = fc_minimum_value + static_cast<rational_type>(alpha * A.size());
+        auto F_A = fc_minimum_value + static_cast<rational_type>(alpha * fc_minimizer_ids.size());
         F.ContractionByIds(fc_minimizer_ids, -F_A);
         Slice(F, x);
         F.Restore(state);

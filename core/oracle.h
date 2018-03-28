@@ -29,8 +29,8 @@ public:
   using value_type = typename ValueTraits<ValueType>::value_type;
   using rational_type = typename ValueTraits<ValueType>::rational_type;
 
-  virtual std::size_t GetN() const = 0;
-  virtual std::size_t GetNGround() const = 0;
+  virtual std::size_t GetN() const { return domain_.GetMembers().size(); }
+  virtual std::size_t GetNGround() const { return domain_.n_; };
   virtual value_type Call(const Set& X) = 0;
 
   value_type Call(const Set& X, SFMReporter* reporter) {

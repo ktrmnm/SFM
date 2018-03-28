@@ -36,15 +36,15 @@ public:
   void SetGraph(MaxflowGraph<ValueType>&& graph);
   void AddCardinalityFunction(value_type multiplier);
 
-  std::size_t GetN() const;
+  std::size_t GetN();
   std::size_t GetNGround() const;
   value_type Call(const Set& X);
 
   // Get node indices in the internal graph object such that is_variable == true.
   // Do not confuse with GetMembers()
-  std::vector<std::size_t> GetVariableIndices() const;
+  std::vector<std::size_t> GetVariableIndices();
   // Get domain members.
-  std::vector<element_type> GetMembers() const;
+  std::vector<element_type> GetMembers();
 
   value_type FV();
   void Minimize();
@@ -71,7 +71,7 @@ protected:
 template <typename ValueType>
 void GeneralizedCutOracle<ValueType>::MakeDomain() {
   Set domain = Set::MakeEmpty(n_ground_);
-  for (const auto& node_id: graph_.GetVariableIndices()) {
+  for (auto&& node_id: GetVariableIndices()) {
     domain.AddElement(graph_.Id2Name(node_id));
   }
   this->SetDomain(std::move(domain));
@@ -97,7 +97,7 @@ void GeneralizedCutOracle<ValueType>::AddCardinalityFunction(value_type multipli
 }
 
 template <typename ValueType>
-std::size_t GeneralizedCutOracle<ValueType>::GetN() const {
+std::size_t GeneralizedCutOracle<ValueType>::GetN() {
   return GetVariableIndices().size();
 }
 
@@ -107,7 +107,7 @@ std::size_t GeneralizedCutOracle<ValueType>::GetNGround() const {
 }
 
 template <typename ValueType>
-GeneralizedCutOracle<ValueType>::value_type
+typename GeneralizedCutOracle<ValueType>::value_type
 GeneralizedCutOracle<ValueType>::Call(const Set& X) {
   auto members = X.GetMembers();
   value_type val(0);
@@ -127,17 +127,17 @@ GeneralizedCutOracle<ValueType>::Call(const Set& X) {
 }
 
 template <typename ValueType>
-std::vector<std::size_t> GeneralizedCutOracle<ValueType>::GetVariableIndices() const {
+std::vector<std::size_t> GeneralizedCutOracle<ValueType>::GetVariableIndices() {
   return graph_.GetInnerIndices(true);
 }
 
 template <typename ValueType>
-std::vector<element_type> GeneralizedCutOracle<ValueType>::GetMembers() const {
+std::vector<element_type> GeneralizedCutOracle<ValueType>::GetMembers() {
   return graph_.GetMembers();
 }
 
 template <typename ValueType>
-GeneralizedCutOracle<ValueType>::value_type
+typename GeneralizedCutOracle<ValueType>::value_type
 GeneralizedCutOracle<ValueType>::FV() {
   auto V = GetVariableIndices();
   auto state = graph_.GetState();
@@ -157,7 +157,7 @@ void GeneralizedCutOracle<ValueType>::Minimize() {
 }
 
 template <typename ValueType>
-GeneralizedCutOracle<ValueType>::value_type
+typename GeneralizedCutOracle<ValueType>::value_type
 GeneralizedCutOracle<ValueType>::GetMinimumValue() {
   if (!done_minimize_) {
     Minimize();
@@ -186,25 +186,25 @@ std::vector<element_type> GeneralizedCutOracle<ValueType>::GetMinimizerMembers()
 }
 
 template <typename ValueType>
-void GeneralizedCutOracle<ValueType>::ReductionByIds(const std::vector<std::size_t> &A) {
+void GeneralizedCutOracle<ValueType>::ReductionByIds(const std::vector<std::size_t>& A) {
   graph_.ReductionByIds(A);
   done_minimize_ = false;
 }
 
 template <typename ValueType>
-void GeneralizedCutOracle<ValueType>::ContractionByIds(const std::vector<std::size_t> &A, ValueType offset) {
+void GeneralizedCutOracle<ValueType>::ContractionByIds(const std::vector<std::size_t>& A, value_type offset) {
   graph_.ContractionByIds(A, offset);
   done_minimize_ = false;
 }
 
 template <typename ValueType>
-GeneralizedCutOracle<ValueType>::state_type
+typename GeneralizedCutOracle<ValueType>::state_type
 GeneralizedCutOracle<ValueType>::GetState() const {
   return graph_.GetState();
 }
 
 template <typename ValueType>
-void GeneralizedCutOracle<ValueType>::Restore(GraphState<ValueType> state) {
+void GeneralizedCutOracle<ValueType>::Restore(state_type state) {
   graph_.RestoreState(state);
   done_minimize_ = false;
 }
@@ -215,7 +215,7 @@ class SFMAlgorithmGeneralizedCut {
 public:
   using value_type = typename ValueTraits<ValueType>::value_type;
 
-  SFMAlgorithm(): done_sfm_(false) {}
+  SFMAlgorithmGeneralizedCut(): done_sfm_(false) {}
 
   void Minimize(GeneralizedCutOracle<ValueType>& F);
 
@@ -244,7 +244,7 @@ void SFMAlgorithmGeneralizedCut<ValueType>::Minimize(GeneralizedCutOracle<ValueT
 }
 
 template <typename ValueType>
-SFMAlgorithmGeneralizedCut<ValueType>::value_type
+typename SFMAlgorithmGeneralizedCut<ValueType>::value_type
 SFMAlgorithmGeneralizedCut<ValueType>::GetMinimumValue() {
   return minimum_value_;
 }

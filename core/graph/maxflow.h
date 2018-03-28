@@ -239,10 +239,11 @@ private:
   auto AliveArcEnd(std::size_t node_id) {
     return adj_[node_id].end();
   }
-  auto InnerBegin() {
+  // TODO: 現状の用途ではconst指定してもたまたまコンパイルが通るが、ちゃんと整理する。
+  auto InnerBegin() const {
     return std::next(typed_node_list_.begin(), state_.first_inner_index);
   }
-  auto InnerEnd() {
+  auto InnerEnd() const {
     return std::next(typed_node_list_.begin(), state_.first_sink_index);
   }
 

@@ -18,7 +18,7 @@ template <typename ValueType> class HypergraphCutPlusModular;
 
 
 template <typename ValueType>
-class HypergraphCutPlusModular: GeneralizedCutOracle<ValueType> {
+class HypergraphCutPlusModular: public GeneralizedCutOracle<ValueType> {
 public:
   HypergraphCutPlusModular(): GeneralizedCutOracle<ValueType>() {}
 

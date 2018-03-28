@@ -17,3 +17,4 @@
 
 // Graph tests
 #include "graph/test_maxflow.h"
+#include "graph/test_divide_conquer.h"

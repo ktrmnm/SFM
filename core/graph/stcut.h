@@ -20,7 +20,7 @@ enum DirectionKind { DIRECTED = 0, UNDIRECTED = 1 };
 
 
 template <typename ValueType>
-class STCut: GeneralizedCutOracle<ValueType> {
+class STCut: public GeneralizedCutOracle<ValueType> {
 public:
   STCut(): GeneralizedCutOracle<ValueType>() {}
 
@@ -33,7 +33,7 @@ public:
 };
 
 template <typename ValueType>
-class STCutPlusModular: GeneralizedCutOracle<ValueType> {
+class STCutPlusModular: public GeneralizedCutOracle<ValueType> {
 public:
   STCutPlusModular(): GeneralizedCutOracle<ValueType>() {}
 
@@ -62,7 +62,7 @@ public:
 */
 
 template <typename ValueType>
-class CutPlusModular: GeneralizedCutOracle<ValueType> {
+class CutPlusModular: public GeneralizedCutOracle<ValueType> {
 public:
   CutPlusModular(): GeneralizedCutOracle<ValueType>() {}
 
@@ -106,7 +106,7 @@ STCut<ValueType> STCut<ValueType>::FromEdgeList(
     }
     auto head = graph.GetNodeById(dst); //NOTE: In this case, node->index == node->name is true for all nodes
     auto tail = graph.GetNodeById(src);
-    ValueType cap = capacities[node_id];
+    ValueType cap = capacities[edge_id];
     ValueType cap_rev = 0;
     if (src == s && dst != t) {
       graph.AddSVArcPair(head, tail, cap, cap_rev);
@@ -174,7 +174,7 @@ STCutPlusModular<ValueType> STCutPlusModular<ValueType>::FromEdgeList(
     }
     auto head = graph.GetNodeById(dst);
     auto tail = graph.GetNodeById(src);
-    ValueType cap = capacities[node_id];
+    ValueType cap = capacities[edge_id];
     ValueType cap_rev = 0;
     if (src == s && dst != t) {
       graph.AddSVArcPair(head, tail, cap, cap_rev);
@@ -193,7 +193,7 @@ STCutPlusModular<ValueType> STCutPlusModular<ValueType>::FromEdgeList(
     }
   }
   graph.MakeGraph(source, sink);
-  STCut<ValueType> F;
+  STCutPlusModular<ValueType> F;
   F.SetGraph(std::move(graph));
   return F;
 }
@@ -240,7 +240,7 @@ CutPlusModular<ValueType> CutPlusModular<ValueType>::FromEdgeList(
     }
     auto head = graph.GetNodeById(dst); //NOTE: In this case, node->index == node->name is true for all nodes
     auto tail = graph.GetNodeById(src);
-    ValueType cap = capacities[node_id];
+    ValueType cap = capacities[edge_id];
     ValueType cap_rev = (directed == DIRECTED) ? 0 : cap;
     if (cap < 0) {
       throw std::invalid_argument("STCut::FromEdgeList: Negative inner capacity");
@@ -248,7 +248,7 @@ CutPlusModular<ValueType> CutPlusModular<ValueType>::FromEdgeList(
     graph.AddArcPair(head, tail, cap, cap_rev);
   }
   graph.MakeGraph(source, sink);
-  STCut<ValueType> F;
+  CutPlusModular<ValueType> F;
   F.SetGraph(std::move(graph));
   return F;
 }

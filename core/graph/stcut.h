@@ -95,6 +95,8 @@ STCut<ValueType> STCut<ValueType>::FromEdgeList(
   for (element_type i = 0; i < n + 2; ++i) {
     graph.AddNode(i); // Add n + 2 nodes (n inners, source and sink nodes)
   }
+  auto source = graph.GetNodeById(s);
+  auto sink = graph.GetNodeById(t);
 
   for (std::size_t edge_id = 0; edge_id < m; ++edge_id) {
     auto src = edges[edge_id].first;
@@ -122,7 +124,7 @@ STCut<ValueType> STCut<ValueType>::FromEdgeList(
       graph.AddSTOffset(cap);
     }
   }
-  graph.MakeGraph();
+  graph.MakeGraph(source, sink);
   STCut<ValueType> F;
   F.SetGraph(std::move(graph));
   return F;
@@ -190,7 +192,7 @@ STCutPlusModular<ValueType> STCutPlusModular<ValueType>::FromEdgeList(
       graph.AddSTOffset(cap);
     }
   }
-  graph.MakeGraph();
+  graph.MakeGraph(source, sink);
   STCut<ValueType> F;
   F.SetGraph(std::move(graph));
   return F;
@@ -245,7 +247,7 @@ CutPlusModular<ValueType> CutPlusModular<ValueType>::FromEdgeList(
     }
     graph.AddArcPair(head, tail, cap, cap_rev);
   }
-  graph.MakeGraph();
+  graph.MakeGraph(source, sink);
   STCut<ValueType> F;
   F.SetGraph(std::move(graph));
   return F;

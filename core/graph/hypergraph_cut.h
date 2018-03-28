@@ -113,7 +113,7 @@ HypergraphCutPlusModular<ValueType>::FromHyperEdgeList(
       graph.AddArcPair(node, w2, inf, 0);
     }
   }
-  graph.MakeGraph();
+  graph.MakeGraph(source, sink);
   STCut<ValueType> F;
   F.SetGraph(std::move(graph));
   return F;

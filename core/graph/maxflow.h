@@ -16,9 +16,15 @@
 #include "core/utils.h"
 #include "core/set_utils.h"
 
+//#define DEBUG
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 namespace submodular {
 
 template <typename ValueType> struct NodeM;
+template <typename ValueType> struct ArcM;
 template <typename ValueType> class MaxflowGraph;
 template <typename ValueType> struct MaxflowState;
 struct MaxflowStats;
@@ -30,8 +36,8 @@ struct NodeM {
   using value_type = ValueType;
   using color_type = NodeColor;
   using Node_s = std::shared_ptr<NodeM<ValueType>>;
-  using Arc_s = std::shared_ptr<Arc<ValueType>>;
-  using Arc_w = std::weak_ptr<Arc<ValueType>>;
+  using Arc_s = std::shared_ptr<ArcM<ValueType>>;
+  using Arc_w = std::weak_ptr<ArcM<ValueType>>;
 
   element_type name;
   std::size_t index; // index in vector
@@ -54,12 +60,34 @@ struct NodeM {
 };
 
 template <typename ValueType>
+struct ArcM {
+  using node_type = NodeM<ValueType>;
+  using value_type = ValueType;
+  using Node_s = typename NodeTraits<node_type>::type_s;
+  using Node_w = typename NodeTraits<node_type>::type_w;
+  using Arc_s  = typename ArcTraits<ArcM<ValueType>>::type_s;
+  using Arc_w  = typename ArcTraits<ArcM<ValueType>>::type_w;
+
+  value_type flow;
+  value_type capacity;
+  Arc_w reversed;
+  Node_w head_node;
+  Node_w tail_node;
+  std::size_t hash;
+
+  value_type GetResidual() { return capacity - flow; }
+  Arc_s GetReversed() { return reversed.lock(); }
+  Node_s GetHeadNode() { return head_node.lock(); }
+  Node_s GetTailNode() { return tail_node.lock(); }
+};
+
+template <typename ValueType>
 struct MaxflowState {
   std::size_t first_inner_index;
   std::size_t first_sink_index;
   std::vector<std::size_t> first_alive_arc_index;
-  value_type alpha;
-  value_type st_offset; //! capacity of s->t arc. (can be negative)
+  ValueType alpha;
+  ValueType st_offset; //! capacity of s->t arc. (can be negative)
 };
 
 
@@ -67,7 +95,7 @@ template <typename ValueType>
 class MaxflowGraph {
 public:
   using node_type = NodeM<ValueType>;
-  using arc_type = Arc<ValueType>;
+  using arc_type = ArcM<ValueType>;
   using value_type = ValueType;
   using state_type = nullptr_t;
   using Node_s = typename NodeTraits<node_type>::type_s;
@@ -118,6 +146,7 @@ public:
   bool IsSinkNode(const Node_s& node) const;
   value_type GetArcBaseCap(const Arc_s& arc) const;
   std::vector<std::size_t> GetInnerIndices(bool filter_variable = false) const;
+  std::vector<element_type> GetMembers() const;
   std::size_t Id2Name(std::size_t index) const { return GetNodeById(index)->name; }
 
   // Maxflow utilities
@@ -131,7 +160,7 @@ public:
   value_type GetCutValueByNames(const std::vector<element_type>& members);
   value_type GetCutValue(const std::vector<TermType>& cut);
   void FindMinCut();
-  //TermType WhatSegment(std::size_t node_id) const;
+  TermType WhatSegment(std::size_t node_id);
   std::vector<std::size_t> GetMinCut(bool filter_variable = false);
 
   // Reduction / contraction utilities
@@ -235,7 +264,7 @@ MaxflowGraph<ValueType>::MaxflowGraph()
   : done_max_preflow_(false),
     done_mincut_(false),
     has_auxiliary_nodes_(false),
-    tol(1e-8),
+    tol_(1e-8),
     flow_offset_(0)
 {
   state_.alpha = 0;
@@ -286,7 +315,7 @@ MaxflowGraph<ValueType>::AddNode(element_type name, bool is_variable) {
 template <typename ValueType>
 typename MaxflowGraph<ValueType>::Arc_s
 MaxflowGraph<ValueType>::AddArc(const Node_s& head, const Node_s& tail, value_type cap) {
-  auto arc = std::make_shared<Arc<ValueType>>();
+  auto arc = std::make_shared<ArcM<ValueType>>();
   arc->flow = 0;
   arc->capacity = cap;
   arc->head_node = head;
@@ -359,7 +388,7 @@ void MaxflowGraph<ValueType>::AddSTOffset(value_type cap) {
 }
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetSTOffset() const {
+typename MaxflowGraph<ValueType>::value_type MaxflowGraph<ValueType>::GetSTOffset() const {
   return state_.st_offset;
 }
 
@@ -367,7 +396,7 @@ template <typename ValueType>
 void MaxflowGraph<ValueType>::MakeGraph(const Node_s& source, const Node_s& sink) {
   // 1. prepare typed_node_list_
   typed_node_list_.clear();
-  typed_node_list_.reserve(GetNodeNumber());
+  typed_node_list_.reserve(nodes_.size());
   for (const auto& node : nodes_) {
     node->typed_index = typed_node_list_.size();
     typed_node_list_.push_back(node);
@@ -386,11 +415,24 @@ void MaxflowGraph<ValueType>::MakeGraph(const Node_s& source, const Node_s& sink
   node1->typed_index = sink->typed_index;
   sink->typed_index = state_.first_sink_index;
 
+  // add s->v and v->t arcs if they do not exist
+  for (auto it = InnerBegin(); it != InnerEnd(); ++it) {
+    auto node = *it;
+    if ((node->sv_arc).expired()) {
+      auto source = GetSourceNode();
+      AddSVArcPair(node, source, 0, 0);
+    }
+    if ((node->vt_arc).expired()) {
+      auto sink = GetSinkNode();
+      AddVTArcPair(sink, node, 0, 0);
+    }
+  }
+
   // 2 make adjacency list
   adj_.clear();
-  adj_.resize(GetNodeNumber());
+  adj_.resize(nodes_.size());
   state_.first_alive_arc_index.clear();
-  state_.first_alive_arc_index.resize(GetNodeNumber(), 0);
+  state_.first_alive_arc_index.resize(nodes_.size(), 0);
   for (const auto& arc : arcs_) {
     std::size_t tail_id = arc->GetTailNode()->index;
     adj_[tail_id].push_back(arc);
@@ -412,7 +454,7 @@ bool MaxflowGraph<ValueType>::HasNode(element_type name) const {
 
 template <typename ValueType>
 typename MaxflowGraph<ValueType>::Node_s MaxflowGraph<ValueType>::GetNode(element_type name) const {
-  return HasNode(name) ? nodes_[name2id_[name]] : nullptr;
+  return HasNode(name) ? nodes_[name2id_.at(name)] : nullptr;
 }
 
 template <typename ValueType>
@@ -556,6 +598,9 @@ void MaxflowGraph<ValueType>::InitCaps() {
 
 template <typename ValueType>
 void MaxflowGraph<ValueType>::InitPreflowPush() {
+  #ifdef DEBUG
+  std::cout << "InitPreflowPush" << std::endl;
+  #endif
   done_max_preflow_ = false;
   done_mincut_ = false;
 
@@ -575,7 +620,7 @@ void MaxflowGraph<ValueType>::InitPreflowPush() {
   for (auto it = AliveArcBegin(source->index); it != AliveArcEnd(source->index); ++it) {
     auto arc = *it;
     value_type res = arc->GetResidual();
-    if (res > 0 && !utils::is_abs_close(res, 0, tol_)) {
+    if (res > 0 && !utils::is_abs_close(res, value_type(0), tol_)) {
       Push(arc, res);
     }
   }
@@ -586,7 +631,9 @@ void MaxflowGraph<ValueType>::InitPreflowPush() {
 
 template <typename ValueType>
 bool MaxflowGraph<ValueType>::FindMaxPreflow(unsigned int max_work_amount) {
-
+  #ifdef DEBUG
+  std::cout << "FindMaxPreflow" << std::endl;
+  #endif
   unsigned int global_relabel_barrier =
       (alpha_n_ * nodes_.size() + alpha_m_ * arcs_.size()) *
       global_relabel_period_;
@@ -622,7 +669,7 @@ void MaxflowGraph<ValueType>::FindMaxPreflow() {
 }
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetMaxFlowValue() {
+typename MaxflowGraph<ValueType>::value_type MaxflowGraph<ValueType>::GetMaxFlowValue() {
   if (!done_max_preflow_) {
     InitPreflowPush();
     FindMaxPreflow();
@@ -638,7 +685,7 @@ void MaxflowGraph<ValueType>::Push(const Arc_s& arc, value_type amount) {
   arc->GetTailNode()->excess -= amount;
 
   Node_s head = arc->GetHeadNode();
-  if (IsInnerNode(head) && utils::is_abs_close(head->excess, 0, tol_)) {
+  if (IsInnerNode(head) && utils::is_abs_close(head->excess, value_type(0), tol_)) {
     RemoveFromInactiveLayer(head);
     AddToActiveLayer(head);
   }
@@ -658,7 +705,7 @@ Height_t MaxflowGraph<ValueType>::Relabel(const Node_s& node) {
     auto arc = *it;
     Height_t current_height = arc->GetHeadNode()->height;
     value_type res = arc->GetResidual();
-    if (res > 0 && !utils::is_abs_close(res, 0, tol_) && min_height > current_height) {
+    if (res > 0 && !utils::is_abs_close(res, value_type(0), tol_) && min_height > current_height) {
       min_height = current_height;
       min_arc_it = it;
     }
@@ -699,14 +746,14 @@ void MaxflowGraph<ValueType>::Discharge(const Node_s& node) {
     Arc_s current_arc = *(node->current_arc);
     value_type res = current_arc->GetResidual();
 
-    if (res > 0 && !utils::is_abs_close(res, 0, tol_)) {
+    if (res > 0 && !utils::is_abs_close(res, value_type(0), tol_)) {
       auto head = current_arc->GetHeadNode();
 
       // push if admissible
       if (head->height + 1 == node->height) {
         value_type update = std::min(node->excess, res);
         Push(current_arc, update);
-        if (utils::is_abs_close(node->excess, 0, tol_)) {
+        if (utils::is_abs_close(node->excess, value_type(0), tol_)) {
           break;
         }
       }
@@ -739,7 +786,7 @@ void MaxflowGraph<ValueType>::Discharge(const Node_s& node) {
   }
 
   if (node->height < n) {
-    if (node->excess > 0 && !utils::is_abs_close(node->excess, 0, tol_)) {
+    if (node->excess > 0 && !utils::is_abs_close(node->excess, value_type(0), tol_)) {
       AddToActiveLayer(node);
     } else {
       AddToInactiveLayer(node);
@@ -774,13 +821,13 @@ void MaxflowGraph<ValueType>::GlobalRelabeling() {
       auto rev_arc = arc->GetReversed();
       value_type rev_res = rev_arc->GetResidual();
 
-      if (rev_res > 0 && !utils::is_abs_close(rev_res, 0, tol_)) {
+      if (rev_res > 0 && !utils::is_abs_close(rev_res, value_type(0), tol_)) {
         auto next_node = arc->GetHeadNode();
         if (next_node->color == WHITE) {
           next_node->color = BLACK;
           next_node->height = next_height;
 
-          if (next_node->excess > 0 && !utils::is_abs_close(next_node->excess, 0, tol_)) {
+          if (next_node->excess > 0 && !utils::is_abs_close(next_node->excess, value_type(0), tol_)) {
             AddToActiveLayer(next_node);
           } else {
             AddToInactiveLayer(next_node);
@@ -812,7 +859,7 @@ bool MaxflowGraph<ValueType>::IsArcAlive(const Arc_s& arc) const {
 }
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetArcBaseCap(const Arc_s& arc) const {
+typename MaxflowGraph<ValueType>::value_type MaxflowGraph<ValueType>::GetArcBaseCap(const Arc_s& arc) const {
   auto head = arc->GetHeadNode();
   auto tail = arc->GetTailNode();
   if (arc == head->GetSVArc()) {
@@ -851,7 +898,7 @@ void MaxflowGraph<ValueType>::FindMinCut() {
     for (auto it = AliveArcBegin(node->index); it != AliveArcEnd(node->index); ++it) {
       auto rev_arc = (*it)->GetReversed();
       value_type res = rev_arc->GetResidual();
-      if (res > 0 && !utils::is_abs_close(res, 0, tol_)) {
+      if (res > 0 && !utils::is_abs_close(res, value_type(0), tol_)) {
         auto dst = rev_arc->GetTailNode();
         if (dst->color == WHITE) {
           dst->color = BLACK;
@@ -864,7 +911,6 @@ void MaxflowGraph<ValueType>::FindMinCut() {
   done_mincut_ = true;
 }
 
-/*
 template <typename ValueType>
 TermType MaxflowGraph<ValueType>::WhatSegment(std::size_t node_id) {
   if (!done_mincut_) {
@@ -872,10 +918,9 @@ TermType MaxflowGraph<ValueType>::WhatSegment(std::size_t node_id) {
   }
   return mincut_[node_id];
 }
-*/
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetCutValue(const std::vector<TermType>& cut) {
+typename MaxflowGraph<ValueType>::value_type MaxflowGraph<ValueType>::GetCutValue(const std::vector<TermType>& cut) {
   value_type out = state_.st_offset;
 
   auto accumulate_caps = [&](std::size_t node_id) {
@@ -916,7 +961,8 @@ std::vector<std::size_t> MaxflowGraph<ValueType>::GetMinCut(bool filter_variable
 }
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetCutValueByIds(const std::vector<std::size_t>& node_ids) {
+typename MaxflowGraph<ValueType>::value_type
+MaxflowGraph<ValueType>::GetCutValueByIds(const std::vector<std::size_t>& node_ids) {
   std::vector<TermType> cut(nodes_.size(), SINK);
   cut[GetSourceNode()->index] = SOURCE;
   for (const auto& node_id: node_ids) {
@@ -926,11 +972,12 @@ value_type MaxflowGraph<ValueType>::GetCutValueByIds(const std::vector<std::size
 }
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetCutValueByNames(const std::vector<element_type>& members) {
+typename MaxflowGraph<ValueType>::value_type
+MaxflowGraph<ValueType>::GetCutValueByNames(const std::vector<element_type>& members) {
   std::vector<TermType> cut(nodes_.size(), SINK);
   cut[GetSourceNode()->index] = SOURCE;
   for (const auto& name: members) {
-    cut[name2ids_[name]] = SOURCE;
+    cut[name2id_[name]] = SOURCE;
   }
   return GetCutValue(cut);
 }
@@ -1158,7 +1205,7 @@ std::vector<element_type> MaxflowGraph<ValueType>::GetMembers() const {
       members.push_back(nodes_[node_id]->name);
     }
   }
-  return indices;
+  return members;
 }
 
 }

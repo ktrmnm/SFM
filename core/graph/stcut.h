@@ -214,7 +214,7 @@ CutPlusModular<ValueType> CutPlusModular<ValueType>::FromEdgeList(
   if (modular_term.size() != n) {
     throw std::invalid_argument("CutPlusModular::FromEdgeList: modular_term.size() should be n");
   }
-  graph.Reserve(n + 2, edges.size());
+  graph.Reserve(n + 2, m);
   std::size_t s = n;
   std::size_t t = n + 1;
   for (element_type i = 0; i < n + 2; ++i) {

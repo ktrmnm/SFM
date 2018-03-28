@@ -56,7 +56,7 @@ template <typename ValueType> struct SimpleGraph;
 
 template <typename ValueType>
 struct Node {
-  using arc_type = nullptr_t;
+  using arc_type = std::nullptr_t;
   using value_type = ValueType;
   using color_type = NodeColor;
   element_type name;
@@ -93,7 +93,7 @@ public:
   using node_type = Node<ValueType>;
   using arc_type = Arc<ValueType>;
   using value_type = ValueType;
-  using state_type = nullptr_t;
+  using state_type = std::nullptr_t;
   using Node_s = typename NodeTraits<node_type>::type_s;
   using Node_w = typename NodeTraits<node_type>::type_w;
   using Arc_s = typename ArcTraits<arc_type>::type_s;

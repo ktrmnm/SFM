@@ -97,7 +97,7 @@ public:
   using node_type = NodeM<ValueType>;
   using arc_type = ArcM<ValueType>;
   using value_type = ValueType;
-  using state_type = nullptr_t;
+  using state_type = MaxflowState<ValueType>;
   using Node_s = typename NodeTraits<node_type>::type_s;
   using Node_w = typename NodeTraits<node_type>::type_w;
   using Arc_s = typename ArcTraits<arc_type>::type_s;
@@ -265,6 +265,7 @@ MaxflowGraph<ValueType>::MaxflowGraph()
   : done_max_preflow_(false),
     done_mincut_(false),
     has_auxiliary_nodes_(false),
+    n_ground_(0),
     tol_(1e-8),
     flow_offset_(0)
 {

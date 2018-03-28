@@ -276,7 +276,7 @@ MaxflowGraph<ValueType>::AddNode(element_type name, bool is_variable) {
 
     name2id_.insert({ node->name, node->index });
     if (is_variable) {
-      n_ground_ = std::max((std::size_t)name, n_ground_);
+      n_ground_ = std::max((std::size_t)name + 1, n_ground_);
     }
 
     return node;

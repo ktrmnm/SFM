@@ -58,24 +58,37 @@ public:
   void Restore(state_type state);
 
 protected:
-  std::size_t node_number_;
+  //std::size_t node_number_;
+  std::size_t n_ground_;
   MaxflowGraph<ValueType> graph_;
   bool done_minimize_;
   value_type minimum_value_;
   std::vector<std::size_t> minimizer_ids_;
   //Set minimizer_;
+  void MakeDomain();
 };
+
+template <typename ValueType>
+void GeneralizedCutOracle<ValueType>::MakeDomain() {
+  Set domain = Set::MakeEmpty(n_ground_);
+  for (const auto& node_id: graph_.GetVariableIndices()) {
+    domain.AddElement(graph_.Id2Name(node_id));
+  }
+  this->SetDomain(std::move(domain));
+}
 
 template <typename ValueType>
 void GeneralizedCutOracle<ValueType>::SetGraph(const MaxflowGraph<ValueType>& graph) {
   graph_ = graph;
-  node_number_ = graph_.GetNodeNumber();
+  n_ground_ = graph_.GetNGround();
+  MakeDomain();
 }
 
 template <typename ValueType>
 void GeneralizedCutOracle<ValueType>::SetGraph(MaxflowGraph<ValueType>&& graph) {
   graph_ = std::move(graph);
-  node_number_ = graph_.GetNodeNumber();
+  n_ground_ = graph_.GetNGround();
+  MakeDomain();
 }
 
 template <typename ValueType>

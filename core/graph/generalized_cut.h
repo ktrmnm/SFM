@@ -94,6 +94,26 @@ std::size_t GeneralizedCutOracle<ValueType>::GetNGround() const {
 }
 
 template <typename ValueType>
+GeneralizedCutOracle<ValueType>::value_type
+GeneralizedCutOracle<ValueType>::Call(const Set& X) {
+  auto members = X.GetMembers();
+  value_type val(0);
+  if (!graph_.HasAuxiliaryNodes()) {
+    val = graph_.GetCutValueByNames(members);
+  }
+  else {
+    auto state1 = graph_.GetState();
+    graph_.ReductionByNames(members);
+    auto state2 = graph_.GetState();
+    graph_.ContractionByNames(members, value_type(0));
+    val = graph_.GetMaxFlowValue();
+    graph_.RestoreState(state2);
+    graph_.RestoreState(state2);
+  }
+  return val;
+}
+
+template <typename ValueType>
 std::vector<std::size_t> GeneralizedCutOracle<ValueType>::GetVariableIndices() const {
   return graph_.GetInnerIndices(true);
 }
@@ -104,7 +124,8 @@ std::vector<element_type> GeneralizedCutOracle<ValueType>::GetMembers() const {
 }
 
 template <typename ValueType>
-value_type GeneralizedCutOracle<ValueType>::FV() {
+GeneralizedCutOracle<ValueType>::value_type
+GeneralizedCutOracle<ValueType>::FV() {
   auto V = GetVariableIndices();
   auto state = graph_.GetState();
   graph_.ContractionByIds(V);

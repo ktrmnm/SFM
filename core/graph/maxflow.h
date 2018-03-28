@@ -108,6 +108,7 @@ public:
   // Methods to get graph information
   std::size_t GetNodeNumber() const;
   bool HasNode(element_type name) const;
+  bool HasAuxiliaryNodes() const { return has_auxiliary_nodes_; }
   Node_s GetNode(element_type name) const;
   Node_s GetNodeById(std::size_t index) const;
   Node_s GetSourceNode() const;
@@ -127,6 +128,7 @@ public:
 
   // Mincut utilities
   value_type GetCutValueByIds(const std::vector<std::size_t>& node_ids);
+  value_type GetCutValueByNames(const std::vector<element_type>& members);
   value_type GetCutValue(const std::vector<TermType>& cut);
   void FindMinCut();
   //TermType WhatSegment(std::size_t node_id) const;
@@ -136,10 +138,12 @@ public:
   MaxflowState<ValueType> GetState() const;
   void RestoreState(MaxflowState<ValueType> state);
 
-  void Reduction(const std::vector<TermType> &cut);
+  void Reduction(const std::vector<TermType>& cut);
   void ReductionByIds(const std::vector<std::size_t>& node_ids);
-  void Contraction(const std::vector<TermType> &cut, value_type additional_offset = 0);
+  void ReductionByNames(const std::vector<element_type>& members);
+  void Contraction(const std::vector<TermType>& cut, value_type additional_offset = 0);
   void ContractionByIds(const std::vector<std::size_t>& node_ids, value_type additional_offset = 0);
+  void ContractionByNames(const std::vector<element_type>& members, value_type additional_offset = 0);
 
 private:
   std::size_t n_ground_;
@@ -147,6 +151,7 @@ private:
   std::unordered_map<element_type, std::size_t> name2id_; // convert node names to indices in nodes_
   std::vector<Arc_s> arcs_;
   std::vector<std::vector<Arc_s>> adj_;
+  bool has_auxiliary_nodes_;
 
   std::vector<TermType> mincut_;
   value_type flow_offset_;
@@ -229,6 +234,7 @@ template <typename ValueType>
 MaxflowGraph<ValueType>::MaxflowGraph()
   : done_max_preflow_(false),
     done_mincut_(false),
+    has_auxiliary_nodes_(false),
     tol(1e-8),
     flow_offset_(0)
 {
@@ -248,6 +254,9 @@ void MaxflowGraph<ValueType>::Reserve(std::size_t n, std::size_t m) {
 template <typename ValueType>
 typename MaxflowGraph<ValueType>::Node_s
 MaxflowGraph<ValueType>::AddNode(element_type name, bool is_variable) {
+  if (!is_variable && !has_auxiliary_nodes_) {
+    has_auxiliary_nodes_ = true;
+  }
   if (name2id_.count(name) == 1) {
     auto node = nodes_[name2id_[name]];
     node->is_variable = is_variable;
@@ -866,7 +875,7 @@ TermType MaxflowGraph<ValueType>::WhatSegment(std::size_t node_id) {
 */
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetCutValue(const std::vector<TermType> &cut) {
+value_type MaxflowGraph<ValueType>::GetCutValue(const std::vector<TermType>& cut) {
   value_type out = state_.st_offset;
 
   auto accumulate_caps = [&](std::size_t node_id) {
@@ -907,7 +916,7 @@ std::vector<std::size_t> MaxflowGraph<ValueType>::GetMinCut(bool filter_variable
 }
 
 template <typename ValueType>
-value_type MaxflowGraph<ValueType>::GetCutValueByIds(const std::vector<std::size_t> &node_ids) {
+value_type MaxflowGraph<ValueType>::GetCutValueByIds(const std::vector<std::size_t>& node_ids) {
   std::vector<TermType> cut(nodes_.size(), SINK);
   cut[GetSourceNode()->index] = SOURCE;
   for (const auto& node_id: node_ids) {
@@ -916,6 +925,15 @@ value_type MaxflowGraph<ValueType>::GetCutValueByIds(const std::vector<std::size
   return GetCutValue(cut);
 }
 
+template <typename ValueType>
+value_type MaxflowGraph<ValueType>::GetCutValueByNames(const std::vector<element_type>& members) {
+  std::vector<TermType> cut(nodes_.size(), SINK);
+  cut[GetSourceNode()->index] = SOURCE;
+  for (const auto& name: members) {
+    cut[name2ids_[name]] = SOURCE;
+  }
+  return GetCutValue(cut);
+}
 
 template <typename ValueType>
 void MaxflowGraph<ValueType>::_RearrangeAliveArcs(std::size_t node_id) {
@@ -1052,7 +1070,7 @@ void MaxflowGraph<ValueType>::RestoreState(MaxflowState<ValueType> state) {
 }
 
 template <typename ValueType>
-void MaxflowGraph<ValueType>::Reduction(const std::vector<TermType> &cut) {
+void MaxflowGraph<ValueType>::Reduction(const std::vector<TermType>& cut) {
   for (const auto& node: nodes_) {
     if (IsInnerNode(node) && cut[node->index] == SINK) {
       MakeSink(node);
@@ -1064,7 +1082,7 @@ void MaxflowGraph<ValueType>::Reduction(const std::vector<TermType> &cut) {
 }
 
 template <typename ValueType>
-void MaxflowGraph<ValueType>::ReductionByIds(const std::vector<std::size_t> &node_ids) {
+void MaxflowGraph<ValueType>::ReductionByIds(const std::vector<std::size_t>& node_ids) {
   std::vector<TermType> cut(nodes_.size(), SINK);
   cut[GetSourceNode()->index] = SOURCE;
   for (const auto& node_id: node_ids) {
@@ -1074,7 +1092,17 @@ void MaxflowGraph<ValueType>::ReductionByIds(const std::vector<std::size_t> &nod
 }
 
 template <typename ValueType>
-void MaxflowGraph<ValueType>::Contraction(const std::vector<TermType> &cut, value_type additional_offset) {
+void MaxflowGraph<ValueType>::ReductionByNames(const std::vector<element_type>& members) {
+  std::vector<TermType> cut(nodes_.size(), SINK);
+  cut[GetSourceNode()->index] = SOURCE;
+  for (const auto& name: members) {
+    cut[name2id_[name]] = SOURCE;
+  }
+  Reduction(cut);
+}
+
+template <typename ValueType>
+void MaxflowGraph<ValueType>::Contraction(const std::vector<TermType>& cut, value_type additional_offset) {
   for (const auto& node: nodes_) {
     if (IsInnerNode(node) && cut[node->index] == SOURCE) {
       MakeSource(node);
@@ -1087,13 +1115,25 @@ void MaxflowGraph<ValueType>::Contraction(const std::vector<TermType> &cut, valu
 }
 
 template <typename ValueType>
-void MaxflowGraph<ValueType>::ContractionByIds(const std::vector<std::size_t> &node_ids,
+void MaxflowGraph<ValueType>::ContractionByIds(const std::vector<std::size_t>& node_ids,
                                     value_type additional_offset)
 {
   std::vector<TermType> cut(nodes_.size(), SINK);
   cut[GetSourceNode()->index] = SOURCE;
   for (const auto& node_id: node_ids) {
     cut[node_id] = SOURCE;
+  }
+  Contraction(cut, additional_offset);
+}
+
+template <typename ValueType>
+void MaxflowGraph<ValueType>::ContractionByNames(const std::vector<element_type>& members,
+                                    value_type additional_offset)
+{
+  std::vector<TermType> cut(nodes_.size(), SINK);
+  cut[GetSourceNode()->index] = SOURCE;
+  for (const auto& name: members) {
+    cut[name2id_[name]] = SOURCE;
   }
   Contraction(cut, additional_offset);
 }

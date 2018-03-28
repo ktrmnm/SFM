@@ -102,6 +102,9 @@ public:
   void AddCardinalityFunction(value_type multiplier);
   void SetTol(value_type tol) { tol_ = tol; }
 
+  void SetNGround(std::size_t n_ground) { n_ground_ = n_ground; }
+  std::size_t GetNGround() const { return n_ground_; }
+
   // Methods to get graph information
   std::size_t GetNodeNumber() const;
   bool HasNode(element_type name) const;
@@ -114,6 +117,7 @@ public:
   bool IsSinkNode(const Node_s& node) const;
   value_type GetArcBaseCap(const Arc_s& arc) const;
   std::vector<std::size_t> GetInnerIndices(bool filter_variable = false) const;
+  std::size_t Id2Name(std::size_t index) const { return GetNodeById(index)->name; }
 
   // Maxflow utilities
   void InitPreflowPush();
@@ -138,6 +142,7 @@ public:
   void ContractionByIds(const std::vector<std::size_t>& node_ids, value_type additional_offset = 0);
 
 private:
+  std::size_t n_ground_;
   std::vector<Node_s> nodes_;
   std::unordered_map<element_type, std::size_t> name2id_; // convert node names to indices in nodes_
   std::vector<Arc_s> arcs_;
@@ -261,6 +266,9 @@ MaxflowGraph<ValueType>::AddNode(element_type name, bool is_variable) {
     nodes_.push_back(node);
 
     name2id_.insert({ node->name, node->index });
+    if (is_variable) {
+      n_ground_ = std::max((std::size_t)name, n_ground_);
+    }
 
     return node;
   }
@@ -1096,6 +1104,18 @@ std::vector<std::size_t> MaxflowGraph<ValueType>::GetInnerIndices(bool filter_va
   for (auto it = InnerBegin(); it != InnerEnd(); ++it) {
     if (!filter_variable || (*it)->is_variable) {
       indices.push_back((*it)->index);
+    }
+  }
+  return indices;
+}
+
+template <typename ValueType>
+std::vector<element_type> MaxflowGraph<ValueType>::GetMembers() const {
+  std::vector<element_type> members;
+  for (auto it = InnerBegin(); it != InnerEnd(); ++it) {
+    if ((*it)->is_variable) {
+      auto node_id = (*it)->index;
+      members.push_back(nodes_[node_id]->name);
     }
   }
   return indices;

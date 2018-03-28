@@ -12,7 +12,7 @@ Algorithms
 - [ ] Iwata--Orlin's algorithm [Iwata&Orlin2009]
 - [ ] Schrijver's algorithm [Schrijver2000]
 - [ ] Cutting plane method proposed in [Lee+2015]
-- [ ] Generalized graph cut function minimization [Jegelka+2011]
+- [x] Generalized graph cut function minimization [Jegelka+2011]
 - [x] Brute force
 
 ## References

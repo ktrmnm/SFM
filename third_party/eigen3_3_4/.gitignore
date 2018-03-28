@@ -1,0 +1,9 @@
+Eigen/*
+!Eigen/Core
+!Eigen/Cholesky
+!Eigen/LU
+!Eigen/QR
+!Eigen/src/Core/*
+!Eigen/src/Choresky/*
+!Eigen/src/LU/*
+!Eigen/src/QR/*

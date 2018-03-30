@@ -39,6 +39,7 @@ public:
   std::size_t GetN();
   std::size_t GetNGround() const;
   value_type Call(const Set& X);
+  virtual std::string GetName() { return "Generalized Cut"; }
 
   // Get node indices in the internal graph object such that is_variable == true.
   // Do not confuse with GetMembers()
@@ -218,6 +219,8 @@ public:
   SFMAlgorithmGeneralizedCut(): done_sfm_(false) {}
 
   void Minimize(GeneralizedCutOracle<ValueType>& F);
+
+  std::string GetName() { return "Maxflow"; }
 
   value_type GetMinimumValue();
   Set GetMinimizer();

@@ -5,6 +5,7 @@
 #include <utility>
 #include <memory>
 #include <type_traits>
+#include <string>
 #include "core/utils.h"
 #include "core/set_utils.h"
 #include "core/partial_vector.h"
@@ -32,6 +33,7 @@ public:
   virtual std::size_t GetN() const { return domain_.GetMembers().size(); }
   virtual std::size_t GetNGround() const { return domain_.n_; };
   virtual value_type Call(const Set& X) = 0;
+  virtual std::string GetName() = 0;
 
   value_type Call(const Set& X, SFMReporter* reporter) {
     if (reporter != nullptr) {
@@ -103,6 +105,8 @@ public:
   value_type Call(const Set& X);
   std::size_t GetN() const; // return the cardinality of the domain
   std::size_t GetNGround() const; // return the cardinality of the ground set
+
+  std::string GetName() { return F_original_->GetName(); }
 
   // Make a reduction
   // The reduction (or restriction) F^A of a submodular function F to A is defined

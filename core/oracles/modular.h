@@ -29,6 +29,8 @@ public:
     return f;
   }
 
+  std::string GetName() { return "Modular"; }
+
   std::size_t GetN() const { return n_; }
   std::size_t GetNGround() const { return n_; }
 
@@ -50,6 +52,8 @@ public:
     }
     return c_;
   }
+
+  std::string GetName() { return "Constant"; }
 
   std::size_t GetN() const { return n_; }
   std::size_t GetNGround() const { return n_; }

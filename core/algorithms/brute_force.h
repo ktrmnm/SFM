@@ -15,12 +15,15 @@ public:
 
   BruteForce() = default;
 
+  std::string GetName() { return "Brute Force"; }
+
   void Minimize(SubmodularOracle<ValueType>& F);
 
 };
 
 template <typename ValueType>
 void BruteForce<ValueType>::Minimize(SubmodularOracle<ValueType>& F) {
+  this->reporter_.SetNames(GetName(), F.GetName());
   this->reporter_.EntryTimer(ReportKind::TOTAL);
   this->reporter_.EntryTimer(ReportKind::ORACLE);
   this->reporter_.EntryCounter(ReportKind::ORACLE);

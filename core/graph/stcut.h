@@ -24,6 +24,8 @@ class STCut: public GeneralizedCutOracle<ValueType> {
 public:
   STCut(): GeneralizedCutOracle<ValueType>() {}
 
+  std::string GetName() { return "S-T Cut"; }
+
   static STCut<ValueType> FromEdgeList(
     std::size_t n, element_type s, element_type t,
     const std::vector<std::pair<element_type, element_type>>& edges,
@@ -36,6 +38,8 @@ template <typename ValueType>
 class STCutPlusModular: public GeneralizedCutOracle<ValueType> {
 public:
   STCutPlusModular(): GeneralizedCutOracle<ValueType>() {}
+
+  std::string GetName() { return "S-T Cut + Modular"; }
 
   static STCutPlusModular<ValueType> FromEdgeList(
     std::size_t n, element_type s, element_type t,
@@ -65,6 +69,8 @@ template <typename ValueType>
 class CutPlusModular: public GeneralizedCutOracle<ValueType> {
 public:
   CutPlusModular(): GeneralizedCutOracle<ValueType>() {}
+
+  std::string GetName() { return "Cut + Modular"; }
 
   static CutPlusModular<ValueType> FromEdgeList(
     std::size_t n, DirectionKind directed,

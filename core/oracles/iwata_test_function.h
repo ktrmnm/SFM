@@ -29,6 +29,8 @@ public:
     return value_type(card * (n_ - card) + 2 * card * n_ - 5 * sum);
   }
 
+  std::string GetName() { return "Iwata test function"; }
+
   std::size_t GetN() const { return n_; }
   std::size_t GetNGround() const { return n_; }
 

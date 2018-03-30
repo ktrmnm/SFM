@@ -22,6 +22,8 @@ class HypergraphCutPlusModular: public GeneralizedCutOracle<ValueType> {
 public:
   HypergraphCutPlusModular(): GeneralizedCutOracle<ValueType>() {}
 
+  std::string GetName() { return "Hypergraph cut (represented as a generalized cut)"; }
+
   static HypergraphCutPlusModular<ValueType> FromHyperEdgeList(
     std::size_t n,
     const std::vector<std::set<element_type>>& hyperedges,

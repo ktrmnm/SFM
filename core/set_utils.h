@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
+#include <iostream>
 //#include <initializer_list>
 
 namespace submodular {
@@ -17,6 +18,7 @@ class Set;
 class Partition;
 bool operator == (const Set& lhs, const Set& rhs);
 bool operator != (const Set& lhs, const Set& rhs);
+std::ostream& operator << (std::ostream& stream, const Set& X);
 
 using element_type = std::size_t;
 
@@ -80,6 +82,7 @@ public:
 
   std::size_t n_;
   std::vector<char> bits_;
+  friend std::ostream& operator << (std::ostream&, const Set&);
 };
 
 class Partition {
@@ -267,6 +270,19 @@ Set Set::MakeDense(std::size_t n) {
 Set Set::MakeEmpty(std::size_t n) {
   Set X(n);
   return X;
+}
+
+std::ostream& operator << (std::ostream& stream, const Set& X) {
+  auto members = X.GetMembers();
+  stream << "{";
+  for (std::size_t pos = 0; pos < members.size(); ++pos) {
+    stream << members[pos];
+    if (pos < members.size() - 1) {
+      stream << ", ";
+    }
+  }
+  stream << "}";
+  return stream;
 }
 
 bool operator == (const Set& lhs, const Set& rhs) {

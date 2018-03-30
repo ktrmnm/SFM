@@ -18,6 +18,7 @@ TEST(BruteForce, Modular) {
   auto val1 = solver1.GetMinimumValue();
   EXPECT_EQ(X1, Set(std::string("11100")));
   EXPECT_EQ(val1, -6);
+  std::cout << solver1.GetReporter() << std::endl;
 
   ModularOracle<int> F2({ 1, 1, 1, -1, -1, 1, 1, -1, 1});
   BruteForce<int> solver2;
@@ -26,6 +27,7 @@ TEST(BruteForce, Modular) {
   auto val2 = solver2.GetMinimumValue();
   EXPECT_EQ(X2, Set(std::string("000110010")));
   EXPECT_EQ(val2, -3);
+  std::cout << solver2.GetReporter() << std::endl;
 }
 
 TEST(BruteForce, IwataTestFunction) {
@@ -34,6 +36,7 @@ TEST(BruteForce, IwataTestFunction) {
   solver1.Minimize(F1);
   EXPECT_EQ(solver1.GetMinimumValue(), -26);
   EXPECT_EQ(solver1.GetMinimizer(), Set(std::string("01111")));
+  std::cout << solver1.GetReporter() << std::endl;
 }
 
 }

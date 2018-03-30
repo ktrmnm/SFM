@@ -5,6 +5,7 @@
 #include <utility>
 #include <stdexcept>
 #include <algorithm>
+#include <iostream>
 #include "core/set_utils.h"
 
 namespace submodular {
@@ -17,6 +18,8 @@ PartialVector<T> operator+(const PartialVector<T>& x1, const PartialVector<T>& x
 template <typename T>
 PartialVector<T> operator*(T a, const PartialVector<T>& x1);
 
+template <typename T>
+std::ostream& operator << (std::ostream& stream, const PartialVector<T>& vec);
 
 template <typename T>
 class PartialVector {
@@ -71,6 +74,8 @@ public:
   std::size_t n_;
   std::vector<T> x_;
   Set domain_;
+
+  friend std::ostream& operator << (std::ostream&, const PartialVector&);
 };
 
 template <typename T>
@@ -182,6 +187,24 @@ PartialVector<T> operator*(T a, const PartialVector<T>& x1) {
     x_new[i] *= a;
   }
   return PartialVector<T>(std::move(x_new), std::move(domain_new));
+}
+
+template <typename T>
+std::ostream& operator << (std::ostream& stream, const PartialVector<T>& vec) {
+  stream << "[";
+  for (std::size_t i = 0; i < vec.n_ground_; ++i) {
+    if (vec.domain_.HasElement(i)) {
+      stream << vec.x_[i];
+    }
+    else {
+      stream << "*";
+    }
+    if (i < vec.n_ground_ - 1) {
+      stream << ", ";
+    }
+  }
+  stream << "]";
+  return stream;
 }
 
 }

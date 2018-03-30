@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <utility>
+#include <string>
 #include "core/set_utils.h"
 #include "core/oracle.h"
 #include "core/reporter.h"
@@ -26,6 +27,8 @@ public:
   // NOTE: SubmodularOracle object F will possibly be modified by the algorithm.
   virtual void Minimize(SubmodularOracle<ValueType>& F) = 0;
 
+  virtual std::string GetName() = 0;
+
   value_type GetMinimumValue();
   Set GetMinimizer();
   SFMReporter GetReporter();
@@ -33,8 +36,8 @@ public:
 protected:
   bool done_sfm_;
   SFMReporter reporter_;
-  value_type minimum_value_;
-  Set minimizer_;
+  //value_type minimum_value_;
+  //Set minimizer_;
   void ClearReports();
   void SetResults(value_type minimum_value, const Set& minimizer);
 };
@@ -42,12 +45,12 @@ protected:
 template <typename ValueType>
 typename SFMAlgorithm<ValueType>::value_type
 SFMAlgorithm<ValueType>::GetMinimumValue() {
-  return minimum_value_;
+  return static_cast<value_type>(reporter_.minimum_value_);
 }
 
 template <typename ValueType>
 Set SFMAlgorithm<ValueType>::GetMinimizer() {
-  return minimizer_;
+  return reporter_.minimizer_;
 }
 
 template <typename ValueType>
@@ -62,8 +65,9 @@ void SFMAlgorithm<ValueType>::ClearReports() {
 
 template <typename ValueType>
 void SFMAlgorithm<ValueType>::SetResults(value_type minimum_value, const Set& minimizer) {
-    minimum_value_ = minimum_value;
-    minimizer_ = minimizer;
+    //minimum_value_ = minimum_value;
+    //minimizer_ = minimizer;
+    reporter_.SetResults(static_cast<double>(minimum_value), minimizer);
     done_sfm_ = true;
 }
 
@@ -76,15 +80,17 @@ public:
 
   virtual void Minimize(ReducibleOracle<ValueType>& F) = 0;
 
+  virtual std::string GetName() = 0;
+
   value_type GetMinimumValue();
   Set GetMinimizer();
   SFMReporter GetReporter();
 
 protected:
   bool done_sfm_;
-  value_type minimum_value_;
+  //value_type minimum_value_;
   SFMReporter reporter_;
-  Set minimizer_;
+  //Set minimizer_;
   void ClearReports();
   void SetResults(value_type minimum_value, const Set& minimizer);
 };
@@ -92,18 +98,19 @@ protected:
 template <typename ValueType>
 typename SFMAlgorithmWithReduction<ValueType>::value_type
 SFMAlgorithmWithReduction<ValueType>::GetMinimumValue() {
-  return minimum_value_;
+  return static_cast<value_type>(reporter_.minimum_value_);
 }
 
 template <typename ValueType>
 Set SFMAlgorithmWithReduction<ValueType>::GetMinimizer() {
-  return minimizer_;
+  return reporter_.minimizer_;
 }
 
 template <typename ValueType>
 void SFMAlgorithmWithReduction<ValueType>::SetResults(value_type minimum_value, const Set& minimizer) {
-    minimum_value_ = minimum_value;
-    minimizer_ = minimizer;
+    //minimum_value_ = minimum_value;
+    //minimizer_ = minimizer;
+    reporter_.SetResults(static_cast<double>(minimum_value), minimizer);
     done_sfm_ = true;
 }
 

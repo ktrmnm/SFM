@@ -28,6 +28,8 @@ public:
 
   void Minimize(SubmodularOracle<ValueType>& F);
 
+  std::string GetName() { return "Fujishige--Wolfe"; }
+
   void SetTol(rational_type tol) { tol_ = tol; }
 
 private:
@@ -136,11 +138,13 @@ void FWRobust<ValueType>::FWUpdate(const base_type& q) {
 
 template <typename ValueType>
 void FWRobust<ValueType>::Minimize(SubmodularOracle<ValueType>& F) {
+  this->reporter_.SetNames(GetName(), F.GetName());
   this->reporter_.EntryTimer(ReportKind::TOTAL);
   this->reporter_.EntryTimer(ReportKind::ORACLE);
   this->reporter_.EntryCounter(ReportKind::ORACLE);
   this->reporter_.EntryTimer(ReportKind::BASE);
   this->reporter_.EntryCounter(ReportKind::BASE);
+  //this->reporter_.EntryCounter(ReportKind::ITERATION);
 
   this->reporter_.TimerStart(ReportKind::TOTAL);
 

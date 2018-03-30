@@ -18,14 +18,18 @@ TEST(FWRobust, Modular) {
   auto val1 = solver1.GetMinimumValue();
   EXPECT_EQ(X1, Set(std::string("11100")));
   EXPECT_EQ(val1, -6);
+  auto r1 = solver1.GetReporter();
+  std::cout << r1 << std::endl;
 
   ModularOracle<int> F2({ 1, 1, 1, -1, -1, 1, 1, -1, 1});
-  BruteForce<int> solver2;
+  FWRobust<int> solver2;
   solver2.Minimize(F2);
   auto X2 = solver2.GetMinimizer();
   auto val2 = solver2.GetMinimumValue();
   EXPECT_EQ(X2, Set(std::string("000110010")));
   EXPECT_EQ(val2, -3);
+  auto r2 = solver2.GetReporter();
+  std::cout << r2 << std::endl;
 }
 
 TEST(FWRobust, IwataTestFunction) {
@@ -34,6 +38,8 @@ TEST(FWRobust, IwataTestFunction) {
   solver1.Minimize(F1);
   EXPECT_EQ(solver1.GetMinimumValue(), -26);
   EXPECT_EQ(solver1.GetMinimizer(), Set(std::string("01111")));
+  auto r1 = solver1.GetReporter();
+  std::cout << r1 << std::endl;
 }
 
 }

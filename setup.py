@@ -11,6 +11,21 @@ import numpy
 
 extensions = [
     Extension(
+        'pysfm._core',
+        sources = [
+            'pysfm/_core.pyx',
+            #'core/python/sfm_core.cpp'
+            ],
+        include_dirs = [
+            numpy.get_include(),
+            get_python_inc(),
+            os.path.abspath('./third_party/eigen3_3_4/'),
+            os.path.abspath('.')
+            ],
+        language = 'c++',
+        extra_compile_args = ['-std=c++11', '-std=c++14']
+    ),
+    Extension(
         'pysfm._gencut',
         sources = [
             'pysfm/_gencut.pyx',

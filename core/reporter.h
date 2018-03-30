@@ -125,7 +125,7 @@ std::ostream& operator << (std::ostream& stream, const SFMReporter& reporter) {
   if (reporter.counts_.count(ReportKind::ORACLE) == 1) {
     stream << "Oracle calls: " << reporter.counts_.at(ReportKind::ORACLE) << '\n';
   }
-  if (reporter.times_.count(ReportKind::TOTAL) == 1) {
+  if (reporter.times_.count(ReportKind::ORACLE) == 1) {
     stream << "Oracle time: " << reporter.times_.at(ReportKind::ORACLE).count() << reporter.duration_suffix_ << '\n';
   }
   if (reporter.counts_.count(ReportKind::BASE) == 1) {
@@ -137,7 +137,7 @@ std::ostream& operator << (std::ostream& stream, const SFMReporter& reporter) {
   if (reporter.counts_.count(ReportKind::ITERATION) == 1) {
     stream << "Iterations: " << reporter.counts_.at(ReportKind::ITERATION) << '\n';
   }
-  
+
   return stream;
 }
 

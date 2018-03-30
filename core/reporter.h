@@ -28,6 +28,8 @@ std::ostream& operator << (std::ostream& stream, const SFMReporter& reporter);
 class SFMReporter {
 public:
   SFMReporter() = default;
+  SFMReporter(const SFMReporter&) = default;
+  SFMReporter(SFMReporter&&) = default;
 
   using duration_type = typename std::chrono::milliseconds;
   const std::string duration_suffix_ = "msec";

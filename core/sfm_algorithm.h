@@ -20,6 +20,8 @@ public:
   using value_type = typename ValueTraits<ValueType>::value_type;
 
   SFMAlgorithm(): done_sfm_(false) {}
+  explicit SFMAlgorithm(const SFMReporter& reporter): reporter_(reporter), done_sfm_(false) {}
+  explicit SFMAlgorithm(SFMReporter&& reporter): reporter(std::move(reporter)), done_sfm(false) {}
 
   // Perform SFM algorithm.
   // The minimum value (and a minimizer) should be stored in minimum_value (resp. minimizer_)

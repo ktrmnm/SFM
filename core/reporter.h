@@ -18,7 +18,8 @@ enum class ReportKind {
   ORACLE,
   BASE,
   TOTAL,
-  ITERATION
+  ITERATION,
+  PREPROCESSING
 };
 
 class SFMReporter;
@@ -30,12 +31,15 @@ public:
   SFMReporter() = default;
   SFMReporter(const SFMReporter&) = default;
   SFMReporter(SFMReporter&&) = default;
+  SFMReporter& operator=(const SFMReporter&) = default;
+  SFMReporter& operator=(SFMReporter&&) = default;
 
   using duration_type = typename std::chrono::milliseconds;
-  const std::string duration_suffix_ = "msec";
+  std::string duration_suffix_ = "msec";
 
   std::unordered_map<ReportKind, unsigned int> counts_;
   std::unordered_map<ReportKind, duration_type> times_;
+  std::vector<std::string> msg_;
 
   std::string algorithm_name_;
   std::string oracle_name_;
@@ -53,6 +57,7 @@ public:
   void SetNames(std::string alg_name, std::string oracle_name);
   void SetResults(double minimum_value, const Set& minimizer);
   void SetResults(double minimum_value, Set&& minimizer);
+  void SetMessage(std::string message) { msg_.push_back(message); }
 
   friend std::ostream& operator << (std::ostream&, const SFMReporter&);
 private:
@@ -70,6 +75,7 @@ void SFMReporter::Clear() {
   for (auto& kv: start_flags_) {
     kv.second = false;
   }
+  msg_.clear();
 }
 
 void SFMReporter::EntryCounter(ReportKind kind) {
@@ -124,6 +130,10 @@ std::ostream& operator << (std::ostream& stream, const SFMReporter& reporter) {
   if (reporter.times_.count(ReportKind::TOTAL) == 1) {
     stream << "Total time: " << reporter.times_.at(ReportKind::TOTAL).count() << reporter.duration_suffix_ << '\n';
   }
+  if (reporter.times_.count(ReportKind::PREPROCESSING) == 1) {
+    stream << "Preprocessing time: " << reporter.times_.at(ReportKind::PREPROCESSING).count()
+    << reporter.duration_suffix_ << '\n';
+  }
   if (reporter.counts_.count(ReportKind::ORACLE) == 1) {
     stream << "Oracle calls: " << reporter.counts_.at(ReportKind::ORACLE) << '\n';
   }
@@ -138,6 +148,12 @@ std::ostream& operator << (std::ostream& stream, const SFMReporter& reporter) {
   }
   if (reporter.counts_.count(ReportKind::ITERATION) == 1) {
     stream << "Iterations: " << reporter.counts_.at(ReportKind::ITERATION) << '\n';
+  }
+  if (!reporter.msg_.empty()) {
+    stream << "Messages:" << '\n';
+    for (const auto& s: reporter.msg_) {
+      stream << "  " << s << '\n';
+    }
   }
 
   return stream;

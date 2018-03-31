@@ -21,12 +21,13 @@ public:
       throw std::range_error("IwataTestFunction::Call: Input size mismatch");
     }
     auto elements = X.GetMembers();
-    auto card = elements.size();
-    std::size_t sum = 0;
+    auto card = value_type(elements.size());
+    auto sum = value_type(0);
+    auto n = value_type(n_);
     for (const auto& i: elements) {
-      sum += i + 1;
+      sum += value_type(i + 1);
     }
-    return value_type(card * (n_ - card) + 2 * card * n_ - 5 * sum);
+    return card * (n - card) + (2 * card * n) - (5 * sum);
   }
 
   std::string GetName() { return "Iwata test function"; }

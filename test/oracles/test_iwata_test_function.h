@@ -19,4 +19,14 @@ TEST(IwataTestFunction, Call) {
   EXPECT_EQ(F.Call(Set(std::string("11111"))), -25);
 }
 
+TEST(IwataTestFunction, CallDouble) {
+  IwataTestFunction<double> F(5);
+  EXPECT_DOUBLE_EQ(F.Call(Set(std::string("00000"))), 0);
+  EXPECT_DOUBLE_EQ(F.Call(Set(std::string("10000"))), 9);
+  EXPECT_DOUBLE_EQ(F.Call(Set(std::string("11000"))), 11);
+  EXPECT_DOUBLE_EQ(F.Call(Set(std::string("11100"))), 6);
+  EXPECT_DOUBLE_EQ(F.Call(Set(std::string("11110"))), -6);
+  EXPECT_DOUBLE_EQ(F.Call(Set(std::string("11111"))), -25);
+}
+
 }

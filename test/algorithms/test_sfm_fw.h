@@ -32,7 +32,7 @@ TEST(FWRobust, Modular) {
   std::cout << r2 << std::endl;
 }
 
-TEST(FWRobust, IwataTestFunction) {
+TEST(FWRobust, IwataTestFunction5) {
   IwataTestFunction<int> F1(5); // F(2345) = -26 is the minimum value
   FWRobust<int> solver1;
   solver1.Minimize(F1);
@@ -40,6 +40,52 @@ TEST(FWRobust, IwataTestFunction) {
   EXPECT_EQ(solver1.GetMinimizer(), Set(std::string("01111")));
   auto r1 = solver1.GetReporter();
   std::cout << r1 << std::endl;
+}
+
+TEST(FWRobust, IwataTestFunction10) {
+  IwataTestFunction<int> F1(10);
+  FWRobust<int> solver1;
+  BruteForce<int> solver2;
+  solver1.Minimize(F1);
+  solver2.Minimize(F1);
+  std::cout << solver1.GetReporter() << std::endl;
+  std::cout << solver2.GetReporter() << std::endl;
+  EXPECT_EQ(solver1.GetMinimumValue(), solver2.GetMinimumValue());
+}
+
+TEST(FWRobust, IwataTestFunctionDouble10) {
+  IwataTestFunction<double> F1(10);
+  FWRobust<double> solver1;
+  BruteForce<double> solver2;
+  solver1.Minimize(F1);
+  solver2.Minimize(F1);
+  std::cout << solver1.GetReporter() << std::endl;
+  std::cout << solver2.GetReporter() << std::endl;
+  EXPECT_EQ(solver1.GetMinimumValue(), solver2.GetMinimumValue());
+}
+
+/*
+TEST(FWRobust, IwataTestFunction20) {
+  IwataTestFunction<int> F1(20);
+  FWRobust<int> solver1;
+  BruteForce<int> solver2;
+  solver1.Minimize(F1);
+  solver2.Minimize(F1);
+  std::cout << solver1.GetReporter() << std::endl;
+  std::cout << solver2.GetReporter() << std::endl;
+  EXPECT_EQ(solver1.GetMinimumValue(), solver2.GetMinimumValue());
+}
+*/
+
+TEST(FWRobust, IwataTestFunction30) {
+  IwataTestFunction<int> F1(30);
+  FWRobust<int> solver1;
+  //BruteForce<int> solver2;
+  solver1.Minimize(F1);
+  //solver2.Minimize(F1);
+  std::cout << solver1.GetReporter() << std::endl;
+  //std::cout << solver2.GetReporter() << std::endl;
+  EXPECT_EQ(solver1.GetMinimumValue(), -651);
 }
 
 }

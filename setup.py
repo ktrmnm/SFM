@@ -13,8 +13,7 @@ extensions = [
     Extension(
         'pysfm._core',
         sources = [
-            'pysfm/_core.pyx',
-            #'core/python/sfm_core.cpp'
+            'pysfm/_core.pyx'
             ],
         include_dirs = [
             numpy.get_include(),
@@ -28,8 +27,7 @@ extensions = [
     Extension(
         'pysfm._gencut',
         sources = [
-            'pysfm/_gencut.pyx',
-            'core/python/gencut.cpp'
+            'pysfm/_gencut.pyx'
             ],
         include_dirs = [numpy.get_include(), get_python_inc(), os.path.abspath('.')],
         language = 'c++',

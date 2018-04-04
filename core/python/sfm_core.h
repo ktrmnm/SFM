@@ -21,7 +21,10 @@
 
 #include <string>
 #include <vector>
+#include <set>
+#include <utility>
 #include <memory>
+#include <stdexcept>
 
 #include "core/python/py_utils.h"
 
@@ -35,7 +38,7 @@
 #include "core/oracles/iwata_test_function.h"
 #include "core/graph/generalized_cut.h"
 #include "core/graph/stcut.h"
-//#include "core/graph/hypergraph_cut.h"
+#include "core/graph/hypergraph_cut.h"
 
 // Algorithms
 #include "core/algorithms/brute_force.h"
@@ -62,23 +65,34 @@ std::vector<double> py_array_to_std_vector(PyArrayObject* py_array);
 // avoid instanciatiation of the abstract SubmodularOracle class.
 // Any oracle factory methods called from python codes must return instances of this wrapper.
 class OracleWrapper;
+class ReducibleOracleWrapper;
+class GraphOracleWrapper;
 
-OracleWrapper factory_modular(PyArrayObject* x, bool reducible);
-//OracleWrapper r_factory_modular(PyArrayObject* x);
-OracleWrapper factory_iwata_test_function(int n, bool reducible);
-//OracleWrapper r_factory_iwata_test_function(int n);
-//OracleWrapper factory_stcut(int n, int s, int t, PyObject* weighted_edge_list);
-//OracleWrapper factory_stcut_plus_modular(int n, int s, int t, PyObject* weighted_edge_list, PyArrayObject* x);
-//OracleWrapper factory_cut_plus_modular(int n, bool directed, PyObject* weighted_edge_list, PyArrayObject* x);
+OracleWrapper factory_modular(PyArrayObject* x);
+ReducibleOracleWrapper r_factory_modular(PyArrayObject* x);
+OracleWrapper factory_iwata_test_function(int n);
+ReducibleOracleWrapper r_factory_iwata_test_function(int n);
+OracleWrapper factory_groupwise_iwata_test_function(int n, int k);
+ReducibleOracleWrapper r_factory_groupwise_iwata_test_function(int n, int k);
+
+GraphOracleWrapper factory_stcut(int n, int s, int t, PyObject* edge_list, PyObject* capacities);
+GraphOracleWrapper factory_stcut_plus_modular(int n, int s, int t, PyObject* edge_list, PyObject* capacities, PyArrayObject* x);
+GraphOracleWrapper factory_cut_plus_modular(int n, bool directed, PyObject* edge_list, PyObject* capacities, PyArrayObject* x);
+GraphOracleWrapper factory_hypergraph_cut_plus_modular(int n, PyObject* weighted_edge_list, PyArrayObject* x);
 
 // -------------------------------------
 // Algorithm wrappers
 // -------------------------------------
 
-//SFMReporter minimize(OracleWrapper F_wrap, std::string method, SFMReporter* reporter);
 SFMReporter minimize_bf(OracleWrapper F_wrap, SFMReporter* reporter);
+SFMReporter minimize_bf(ReducibleOracleWrapper F_wrap, SFMReporter* reporter);
+SFMReporter minimize_bf(GraphOracleWrapper F_wrap, SFMReporter* reporter);
+
 SFMReporter minimize_fw(OracleWrapper F_wrap, SFMReporter* reporter, double precision);
-//SFMReporter minimize_graph(OracleWrapper F_wrap);
+SFMReporter minimize_fw(ReducibleOracleWrapper F_wrap, SFMReporter* reporter, double precision);
+SFMReporter minimize_fw(GraphOracleWrapper F_wrap, SFMReporter* reporter, double precision);
+
+SFMReporter minimize_graph(GraphOracleWrapper F_wrap, SFMReporter* reporter);
 
 }
 
@@ -213,51 +227,108 @@ public:
   bool is_graph;
 };
 
-OracleWrapper factory_modular(PyArrayObject* x, bool reducible) {
+class ReducibleOracleWrapper {
+public:
+  ReducibleOracleWrapper()
+    : is_reducible(true),
+      is_graph(false),
+      F_ptr(nullptr)
+  {}
+
+  std::shared_ptr<ReducibleOracle<double>> F_ptr;
+  bool is_reducible;
+  bool is_graph;
+};
+
+class GraphOracleWrapper {
+public:
+  GraphOracleWrapper()
+    : is_reducible(false),
+      is_graph(true),
+      F_ptr(nullptr)
+  {}
+
+  std::shared_ptr<GeneralizedCutOracle<double>> F_ptr;
+  bool is_reducible;
+  bool is_graph;
+};
+
+OracleWrapper factory_modular(PyArrayObject* x) {
   auto data = py_array_to_std_vector(x);
   OracleWrapper ow;
-  if (!reducible) {
-    ow.F_ptr = std::make_shared<ModularOracle<double>>(data);
-  }
-  else {
-    ow.is_reducible = true;
-    ModularOracle<double> modular(data);
-    ow.F_ptr = std::make_shared<ReducibleOracle<double>>(std::move(modular));
-  }
+  ow.F_ptr = std::make_shared<ModularOracle<double>>(data);
   return ow;
 }
 
-/*
-OracleWrapper r_factory_modular(PyArrayObject* x) {
+ReducibleOracleWrapper r_factory_modular(PyArrayObject* x) {
   auto data = py_array_to_std_vector(x);
-  OracleWrapper ow(true, false);
+  ReducibleOracleWrapper ow;
   ModularOracle<double> modular(data);
   ow.F_ptr = std::make_shared<ReducibleOracle<double>>(std::move(modular));
   return ow;
 }
-*/
 
-OracleWrapper factory_iwata_test_function(int n, bool reducible) {
+OracleWrapper factory_iwata_test_function(int n) {
   OracleWrapper ow;
-  if (!reducible) {
-    ow.F_ptr = std::make_shared<IwataTestFunction<double>>(n);
-  }
-  else {
-    ow.is_reducible = true;
-    IwataTestFunction<double> F(n);
-    ow.F_ptr = std::make_shared<ReducibleOracle<double>>(std::move(F));
-  }
+  ow.F_ptr = std::make_shared<IwataTestFunction<double>>(n);
   return ow;
 }
 
-/*
-OracleWrapper r_factory_iwata_test_function(int n) {
-  OracleWrapper ow(true, false);
+ReducibleOracleWrapper r_factory_iwata_test_function(int n) {
+  ReducibleOracleWrapper ow;
   IwataTestFunction<double> F(n);
   ow.F_ptr = std::make_shared<ReducibleOracle<double>>(std::move(F));
   return ow;
 }
-*/
+
+OracleWrapper factory_groupwise_iwata_test_function(int n, int k) {
+  OracleWrapper ow;
+  ow.F_ptr = std::make_shared<GroupwiseIwataTestFunction<double>>(n, k);
+  return ow;
+}
+
+ReducibleOracleWrapper r_factory_groupwise_iwata_test_function(int n, int k) {
+  ReducibleOracleWrapper ow;
+  GroupwiseIwataTestFunction<double> F(n, k);
+  ow.F_ptr = std::make_shared<ReducibleOracle<double>>(std::move(F));
+  return ow;
+}
+
+
+GraphOracleWrapper factory_stcut(int n, int s, int t, PyObject* edge_list, PyObject* capacities) {
+  GraphOracleWrapper ow;
+  ow.is_graph = true;
+  auto edges = py_utils::py_list_to_vector_of_pairs(edge_list);
+  auto caps = py_utils::py_list_to_std_vector(capacities);
+  auto F = STCut<double>::FromEdgeList(n, s, t, edges, caps);
+  ow.F_ptr = std::make_shared<STCut<double>>(std::move(F)); //NOTE: ムーブコンストラクタは明示的に定義していない
+  return ow;
+}
+
+GraphOracleWrapper factory_stcut_plus_modular(int n, int s, int t, PyObject* edge_list, PyObject* capacities, PyArrayObject* x) {
+  GraphOracleWrapper ow;
+  ow.is_graph = true;
+  auto edges = py_utils::py_list_to_vector_of_pairs(edge_list);
+  auto caps = py_utils::py_list_to_std_vector(capacities);
+  auto modular = py_array_to_std_vector(x);
+  auto F = STCutPlusModular<double>::FromEdgeList(n, s, t, edges, caps, modular);
+  ow.F_ptr = std::make_shared<STCutPlusModular<double>>(std::move(F)); //NOTE: ムーブコンストラクタは明示的に定義していない
+  return ow;
+}
+
+GraphOracleWrapper factory_cut_plus_modular(int n, bool directed, PyObject* edge_list, PyObject* capacities, PyArrayObject* x) {
+  GraphOracleWrapper ow;
+  ow.is_graph = true;
+  auto edges = py_utils::py_list_to_vector_of_pairs(edge_list);
+  auto caps = py_utils::py_list_to_std_vector(capacities);
+  auto modular = py_array_to_std_vector(x);
+  DirectionKind kind = directed ? DIRECTED : UNDIRECTED;
+  auto F = CutPlusModular<double>::FromEdgeList(n, kind, edges, caps, modular);
+  ow.F_ptr = std::make_shared<CutPlusModular<double>>(std::move(F)); //NOTE: ムーブコンストラクタは明示的に定義していない
+  return ow;
+}
+
+//OracleWrapper factory_hypergraph_cut_plus_modular(int n, PyObject* weighted_edge_list, PyArrayObject* x);
 
 // -------------------------------------
 // Algorithm wrappers impl
@@ -272,8 +343,53 @@ SFMReporter minimize_bf(OracleWrapper F_wrap, SFMReporter* reporter) {
   return solver.GetReporter();
 }
 
+SFMReporter minimize_bf(ReducibleOracleWrapper F_wrap, SFMReporter* reporter) {
+  BruteForce<double> solver;
+  if (reporter != nullptr) {
+    solver.SetReporter(*reporter);
+  }
+  solver.Minimize(*(F_wrap.F_ptr));
+  return solver.GetReporter();
+}
+
+SFMReporter minimize_bf(GraphOracleWrapper F_wrap, SFMReporter* reporter) {
+  BruteForce<double> solver;
+  if (reporter != nullptr) {
+    solver.SetReporter(*reporter);
+  }
+  solver.Minimize(*(F_wrap.F_ptr));
+  return solver.GetReporter();
+}
+
 SFMReporter minimize_fw(OracleWrapper F_wrap, SFMReporter* reporter, double precision) {
   FWRobust<double> solver(precision);
+  if (reporter != nullptr) {
+    solver.SetReporter(*reporter);
+  }
+  solver.Minimize(*(F_wrap.F_ptr));
+  return solver.GetReporter();
+}
+
+SFMReporter minimize_fw(ReducibleOracleWrapper F_wrap, SFMReporter* reporter, double precision) {
+  FWRobust<double> solver(precision);
+  if (reporter != nullptr) {
+    solver.SetReporter(*reporter);
+  }
+  solver.Minimize(*(F_wrap.F_ptr));
+  return solver.GetReporter();
+}
+
+SFMReporter minimize_fw(GraphOracleWrapper F_wrap, SFMReporter* reporter, double precision) {
+  FWRobust<double> solver(precision);
+  if (reporter != nullptr) {
+    solver.SetReporter(*reporter);
+  }
+  solver.Minimize(*(F_wrap.F_ptr));
+  return solver.GetReporter();
+}
+
+SFMReporter minimize_graph(GraphOracleWrapper F_wrap, SFMReporter* reporter) {
+  SFMAlgorithmGeneralizedCut<double> solver;
   if (reporter != nullptr) {
     solver.SetReporter(*reporter);
   }

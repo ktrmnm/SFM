@@ -52,6 +52,53 @@ private:
 
 };
 
+template <typename ValueType>
+class GroupwiseIwataTestFunction: public SubmodularOracle<ValueType> {
+public:
+  using value_type = typename ValueTraits<ValueType>::value_type;
+
+  GroupwiseIwataTestFunction(std::size_t n, std::size_t k)
+    : n_(n), k_(k)
+  {
+    this->SetDomain(Set::MakeDense(n_));
+
+    if (k_ < 1) k_ = 1;
+    if (k_ > n_) k_ = n_;
+  }
+
+  value_type Call(const Set& X) {
+    if (X.n_ != n_) {
+      throw std::range_error("GroupwiseIwataTestFunction::Call: Input size mismatch");
+    }
+
+    auto elements = X.GetMembers();
+    std::vector<value_type> groupwise_card(k_, 0);
+    std::vector<value_type> groupwise_sum(k_, 0);
+    auto val = value_type(0);
+
+    for (const auto& i: elements) {
+      groupwise_card[i % k_] += static_cast<value_type>(1);
+      groupwise_sum[i % k_] += static_cast<value_type>((i / k_) + 1);
+    }
+
+    for (std::size_t j = 0; j < k_; ++j) {
+      auto nj = static_cast<value_type>(n_ / k_);
+      nj += static_cast<value_type>(j < (n_ % k_) ? 1 : 0);
+      val += groupwise_card[j] * (nj - groupwise_card[j]) + (2 * groupwise_card[j] * nj) - (5 * groupwise_sum[j]);
+    }
+    return val;
+  }
+
+  std::string GetName() { return "Groupwise Iwata test function"; }
+
+  std::size_t GetN() const { return n_; }
+  std::size_t GetNGround() const { return n_; }
+
+private:
+  std::size_t n_;
+  std::size_t k_; // number of groups
+};
+
 }
 
 #endif

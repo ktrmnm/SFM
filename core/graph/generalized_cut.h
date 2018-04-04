@@ -229,6 +229,8 @@ public:
   using value_type = typename ValueTraits<ValueType>::value_type;
 
   SFMAlgorithmGeneralizedCut(): done_sfm_(false) {}
+  void SetReporter(const SFMReporter& reporter) { reporter_ = reporter; }
+  void SetReporter(SFMReporter&& reporter) { reporter_ = std::move(reporter); }
 
   void Minimize(GeneralizedCutOracle<ValueType>& F);
 
@@ -236,13 +238,13 @@ public:
 
   value_type GetMinimumValue();
   Set GetMinimizer();
-  //SFMReporter GetReporter();
+  SFMReporter GetReporter() { return reporter_; }
 
 protected:
   bool done_sfm_;
-  //SFMReporter reporter_;
-  value_type minimum_value_;
-  Set minimizer_;
+  SFMReporter reporter_;
+  //value_type minimum_value_;
+  //Set minimizer_;
   //void ClearReports();
   //void SetResults(value_type minimum_value, const Set& minimizer);
 };
@@ -250,10 +252,10 @@ protected:
 template <typename ValueType>
 void SFMAlgorithmGeneralizedCut<ValueType>::Minimize(GeneralizedCutOracle<ValueType>& F) {
   if (!done_sfm_) {
-    minimum_value_ = F.GetMinimumValue();
+    reporter_.minimum_value_ = static_cast<double>(F.GetMinimumValue());
     auto minimizer_members = F.GetMinimizerMembers();
     auto n_ground = F.GetNGround();
-    minimizer_ = Set::FromIndices(n_ground, minimizer_members);
+    reporter_.minimizer_ = Set::FromIndices(n_ground, minimizer_members);
     done_sfm_ = true;
   }
 }
@@ -261,12 +263,12 @@ void SFMAlgorithmGeneralizedCut<ValueType>::Minimize(GeneralizedCutOracle<ValueT
 template <typename ValueType>
 typename SFMAlgorithmGeneralizedCut<ValueType>::value_type
 SFMAlgorithmGeneralizedCut<ValueType>::GetMinimumValue() {
-  return minimum_value_;
+  return static_cast<value_type>(reporter_.minimum_value_);
 }
 
 template <typename ValueType>
 Set SFMAlgorithmGeneralizedCut<ValueType>::GetMinimizer() {
-  return minimizer_;
+  return reporter_.minimizer_;
 }
 
 }

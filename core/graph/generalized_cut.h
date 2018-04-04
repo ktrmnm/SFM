@@ -252,11 +252,19 @@ protected:
 template <typename ValueType>
 void SFMAlgorithmGeneralizedCut<ValueType>::Minimize(GeneralizedCutOracle<ValueType>& F) {
   if (!done_sfm_) {
-    reporter_.minimum_value_ = static_cast<double>(F.GetMinimumValue());
+    this->reporter_.SetNames(GetName(), F.GetName());
+    this->reporter_.EntryTimer(ReportKind::TOTAL);
+    this->reporter_.TimerStart(ReportKind::TOTAL);
+
+    auto minimum_value = static_cast<double>(F.GetMinimumValue());
     auto minimizer_members = F.GetMinimizerMembers();
     auto n_ground = F.GetNGround();
-    reporter_.minimizer_ = Set::FromIndices(n_ground, minimizer_members);
+    auto X = Set::FromIndices(n_ground, minimizer_members);
     done_sfm_ = true;
+
+    this->reporter_.TimerStop(ReportKind::TOTAL);
+    this->reporter_.minimum_value_ = minimum_value;
+    this->reporter_.minimizer_ = std::move(X);
   }
 }
 

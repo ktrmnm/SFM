@@ -17,6 +17,8 @@ cdef extern from "core/python/gencut.h":
 
     cdef np.ndarray c_graph_prox "submodular::graph_prox"(np.ndarray, float, list, list, bool_t, float) except +
 
+    cdef np.ndarray c_hypergraph_prox "submodular::hypergraph_prox"(np.ndarray, float, list, list, float) except +
+
 
 def _graph_prox_grid_1d(np.ndarray y, float alpha, bool_t directed, **kwargs):
     tol = kwargs.get('tol', 1e-8)
@@ -32,3 +34,8 @@ def _graph_prox_grid_2d(np.ndarray y, float alpha, bool_t directed, **kwargs):
 def _graph_prox(np.ndarray y, float alpha, list edge_list, list capacities, bool_t directed, **kwargs):
     tol = kwargs.get('tol', 1e-8)
     return c_graph_prox(y, alpha, edge_list, capacities, directed, tol)
+
+
+def _hypergraph_prox(np.ndarray y, float alpha, list hyperedge_list, list capacities, **kwargs):
+    tol = kwargs.get('tol', 1e-8)
+    return c_hypergraph_prox(y, alpha, hyperedge_list, capacities, tol)

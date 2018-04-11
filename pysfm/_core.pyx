@@ -67,6 +67,7 @@ cdef extern from "core/python/sfm_core.h" namespace "submodular":
     cdef GraphOracleWrapper factory_stcut(int, int, int, list, list)
     cdef GraphOracleWrapper factory_stcut_plus_modular(int, int, int, list, list, np.ndarray)
     cdef GraphOracleWrapper factory_cut_plus_modular(int, bool_t, list, list, np.ndarray)
+    cdef GraphOracleWrapper factory_hypergraph_cut_plus_modular(int, list, list, np.ndarray)
 
     cdef SFMReporter minimize_bf(OracleWrapper, SFMReporter*)
     cdef SFMReporter minimize_bf(ReducibleOracleWrapper, SFMReporter*)
@@ -87,7 +88,8 @@ _oracles = {
     "groupwise_iwata_test_function": ["o", "r"],
     "stcut": ["g"],
     "stcut_plus_modular": ["g"],
-    "cut_plus_modular": ["g"]
+    "cut_plus_modular": ["g"],
+    "hypergraph_cut_plus_modular": ["g"]
 }
 
 
@@ -116,6 +118,8 @@ cdef GraphOracleWrapper _make_g(object F):
         return g_make_stcut_plus_modular(F)
     elif F.name is "cut_plus_modular":
         return g_make_cut_plus_modular(F)
+    elif F.name is "hypergraph_cut_plus_modular":
+        return g_make_hypergraph_cut_plus_modular(F)
 
 
 cdef OracleWrapper make_modular(object F):
@@ -176,6 +180,15 @@ cdef GraphOracleWrapper g_make_cut_plus_modular(object F):
     cdef list caps = F.data.get('capacities')
     cdef np.ndarray x = F.data.get('x')
     return factory_cut_plus_modular(n, directed, edges, caps, x)
+
+
+cdef GraphOracleWrapper g_make_hypergraph_cut_plus_modular(object F):
+    cdef int n = F.data.get('n')
+    #cdef bool_t directed = F.data.get('directed')
+    cdef list hyperedges = F.data.get('hyperedge_list')
+    cdef list caps = F.data.get('capacities')
+    cdef np.ndarray x = F.data.get('x')
+    return factory_hypergraph_cut_plus_modular(n, hyperedges, caps, x)
 
 
 """

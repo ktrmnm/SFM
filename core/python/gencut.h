@@ -24,6 +24,7 @@
 #include <iostream>
 #include "core/utils.h"
 #include "core/graph/stcut.h"
+#include "core/graph/hypergraph_cut.h"
 #include "core/graph/divide_conquer.h"
 #include "core/python/py_utils.h"
 
@@ -32,6 +33,7 @@ namespace submodular {
 PyObject* graph_prox_grid_1d(PyArrayObject* y, double alpha, bool directed, double tol);
 PyObject* graph_prox_grid_2d(PyArrayObject* y, double alpha, bool directed, double tol);
 PyObject* graph_prox(PyArrayObject* y, double alpha, PyObject* edge_list, PyObject* capacities, bool directed, double tol);
+PyObject* hypergraph_prox(PyArrayObject* y, double alpha, PyObject* hyperedge_list, PyObject* capacities, double tol);
 
 }
 
@@ -159,6 +161,40 @@ PyObject* graph_prox(PyArrayObject* y, double alpha, PyObject* edge_list, PyObje
 
   auto F = CutPlusModular<double>::FromEdgeList(
     n, (directed ? DIRECTED : UNDIRECTED), edges, caps, y_data
+  );
+  DivideConquerMNP<double> solver;
+  auto solution = solver.Solve(F);
+  std::vector<double> base(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    base[i] = - solution[i];
+  }
+
+  npy_intp dims[1] = { (npy_intp) n };
+  PyObject* py_base = PyArray_SimpleNew(1, dims, NPY_FLOAT64);
+  std::copy(base.begin(), base.end(), (double *)PyArray_DATA(py_base));
+  return py_base;
+}
+
+PyObject* hypergraph_prox(PyArrayObject* y, double alpha, PyObject* hyperedge_list, PyObject* capacities, double tol) {
+  if (!PyArray_Check(y)) {
+    py_utils::set_value_error("numpy.ndarray");
+    return nullptr;
+  }
+
+  // If |alpha| is smaller than given tolerance, return a copy of y
+  if (utils::is_close(alpha, 0.0, tol)) {
+    return PyArray_NewCopy(y, NPY_CORDER);
+  }
+  std::vector<double> y_data((double *)PyArray_DATA(y), ((double *)PyArray_DATA(y)) + PyArray_DIM(y, 0));
+  auto n = y_data.size();
+  auto hyperedges = py_utils::py_list_to_vector_of_sets(hyperedge_list);
+  auto caps = py_utils::py_list_to_std_vector(capacities);
+  for (auto& y_i: y_data) {
+    y_i = - y_i / alpha;
+  }
+
+  auto F = HypergraphCutPlusModular<double>::FromHyperEdgeList(
+    n, hyperedges, caps, y_data
   );
   DivideConquerMNP<double> solver;
   auto solution = solver.Solve(F);

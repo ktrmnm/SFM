@@ -128,7 +128,7 @@ HypergraphCutPlusModular<ValueType>::FromHyperEdgeList(
     }
   }
   graph.MakeGraph(source, sink);
-  STCut<ValueType> F;
+  HypergraphCutPlusModular<ValueType> F;
   F.SetGraph(std::move(graph));
   return F;
 }

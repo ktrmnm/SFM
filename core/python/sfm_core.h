@@ -78,7 +78,7 @@ ReducibleOracleWrapper r_factory_groupwise_iwata_test_function(int n, int k);
 GraphOracleWrapper factory_stcut(int n, int s, int t, PyObject* edge_list, PyObject* capacities);
 GraphOracleWrapper factory_stcut_plus_modular(int n, int s, int t, PyObject* edge_list, PyObject* capacities, PyArrayObject* x);
 GraphOracleWrapper factory_cut_plus_modular(int n, bool directed, PyObject* edge_list, PyObject* capacities, PyArrayObject* x);
-GraphOracleWrapper factory_hypergraph_cut_plus_modular(int n, PyObject* weighted_edge_list, PyArrayObject* x);
+GraphOracleWrapper factory_hypergraph_cut_plus_modular(int n, PyObject* hyper_edge_list, PyObject* capacities, PyArrayObject* x);
 
 // -------------------------------------
 // Algorithm wrappers
@@ -328,7 +328,16 @@ GraphOracleWrapper factory_cut_plus_modular(int n, bool directed, PyObject* edge
   return ow;
 }
 
-//OracleWrapper factory_hypergraph_cut_plus_modular(int n, PyObject* weighted_edge_list, PyArrayObject* x);
+GraphOracleWrapper factory_hypergraph_cut_plus_modular(int n, PyObject* hyper_edge_list, PyObject* capacities, PyArrayObject* x) {
+  GraphOracleWrapper ow;
+  ow.is_graph = true;
+  auto edges = py_utils::py_list_to_vector_of_sets(hyper_edge_list);
+  auto caps = py_utils::py_list_to_std_vector(capacities);
+  auto modular = py_array_to_std_vector(x);
+  auto F = HypergraphCutPlusModular<double>::FromHyperEdgeList(n, edges, caps, modular);
+  ow.F_ptr = std::make_shared<HypergraphCutPlusModular<double>>(std::move(F));
+  return ow;
+}
 
 // -------------------------------------
 // Algorithm wrappers impl

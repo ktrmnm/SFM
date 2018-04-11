@@ -84,8 +84,8 @@ public:
   // (PartialVector object does not check the consistency by itself.)
   std::size_t n_ground_;
   std::size_t n_;
-  std::vector<T> x_;
   Set domain_;
+  std::vector<T> x_;
 
   friend std::ostream& operator << (std::ostream&, const PartialVector&);
 };

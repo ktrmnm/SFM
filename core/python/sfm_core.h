@@ -217,9 +217,9 @@ std::vector<double> py_array_to_std_vector(PyArrayObject* py_array) {
 class OracleWrapper {
 public:
   OracleWrapper()
-    : is_reducible(false),
-      is_graph(false),
-      F_ptr(nullptr)
+    : F_ptr(nullptr),
+      is_reducible(false),
+      is_graph(false)
   {}
 
   std::shared_ptr<SubmodularOracle<double>> F_ptr;
@@ -230,9 +230,9 @@ public:
 class ReducibleOracleWrapper {
 public:
   ReducibleOracleWrapper()
-    : is_reducible(true),
-      is_graph(false),
-      F_ptr(nullptr)
+    : F_ptr(nullptr),
+      is_reducible(true),
+      is_graph(false)
   {}
 
   std::shared_ptr<ReducibleOracle<double>> F_ptr;
@@ -243,9 +243,9 @@ public:
 class GraphOracleWrapper {
 public:
   GraphOracleWrapper()
-    : is_reducible(false),
-      is_graph(true),
-      F_ptr(nullptr)
+    : F_ptr(nullptr),
+      is_reducible(false),
+      is_graph(true)  
   {}
 
   std::shared_ptr<GeneralizedCutOracle<double>> F_ptr;

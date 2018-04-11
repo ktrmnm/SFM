@@ -146,8 +146,8 @@ public:
 
 protected:
   std::shared_ptr<SubmodularOracle<ValueType>> F_original_;
-  Partition partition_;
   Set contracted_;
+  Partition partition_;
   value_type offset_;
 };
 

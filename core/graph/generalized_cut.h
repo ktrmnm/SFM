@@ -48,14 +48,14 @@ public:
   void SetGraph(MaxflowGraph<ValueType>&& graph);
   void AddCardinalityFunction(value_type multiplier);
 
-  std::size_t GetN();
+  std::size_t GetN() const;
   std::size_t GetNGround() const;
   value_type Call(const Set& X);
   virtual std::string GetName() { return "Generalized Cut"; }
 
   // Get node indices in the internal graph object such that is_variable == true.
   // Do not confuse with GetMembers()
-  std::vector<std::size_t> GetVariableIndices();
+  std::vector<std::size_t> GetVariableIndices() const;
   // Get domain members.
   std::vector<element_type> GetMembers();
 
@@ -110,7 +110,7 @@ void GeneralizedCutOracle<ValueType>::AddCardinalityFunction(value_type multipli
 }
 
 template <typename ValueType>
-std::size_t GeneralizedCutOracle<ValueType>::GetN() {
+std::size_t GeneralizedCutOracle<ValueType>::GetN() const {
   return GetVariableIndices().size();
 }
 
@@ -140,7 +140,7 @@ GeneralizedCutOracle<ValueType>::Call(const Set& X) {
 }
 
 template <typename ValueType>
-std::vector<std::size_t> GeneralizedCutOracle<ValueType>::GetVariableIndices() {
+std::vector<std::size_t> GeneralizedCutOracle<ValueType>::GetVariableIndices() const{
   return graph_.GetInnerIndices(true);
 }
 

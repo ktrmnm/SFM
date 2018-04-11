@@ -274,12 +274,12 @@ private:
 
 template <typename ValueType>
 MaxflowGraph<ValueType>::MaxflowGraph()
-  : done_max_preflow_(false),
-    done_mincut_(false),
+  : n_ground_(0),
     has_auxiliary_nodes_(false),
-    n_ground_(0),
-    tol_(1e-8),
-    flow_offset_(0)
+    flow_offset_(0),
+    done_max_preflow_(false),
+    done_mincut_(false),
+    tol_(1e-8)
 {
   state_.alpha = 0;
   state_.st_offset = 0;

@@ -8,3 +8,4 @@ Eigen/*
 !Eigen/src/LU/*
 !Eigen/src/QR/*
 !Eigen/src/plugins/*
+!Eigen/src/misc/*

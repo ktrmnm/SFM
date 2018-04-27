@@ -7,3 +7,4 @@ Eigen/*
 !Eigen/src/Choresky/*
 !Eigen/src/LU/*
 !Eigen/src/QR/*
+!Eigen/src/plugins/*

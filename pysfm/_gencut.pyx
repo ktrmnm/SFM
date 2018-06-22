@@ -13,7 +13,7 @@ from libcpp cimport bool as bool_t
 cdef extern from "core/python/gencut.h":
     cdef np.ndarray c_graph_prox_grid_1d "submodular::graph_prox_grid_1d"(np.ndarray, float, bool_t, float) except +
 
-    cdef np.ndarray c_graph_prox_grid_2d "submodular::graph_prox_grid_1d"(np.ndarray, float, bool_t, float) except +
+    cdef np.ndarray c_graph_prox_grid_2d "submodular::graph_prox_grid_2d"(np.ndarray, float, bool_t, float) except +
 
     cdef np.ndarray c_graph_prox "submodular::graph_prox"(np.ndarray, float, list, list, bool_t, float) except +
 

@@ -105,18 +105,22 @@ PyObject* graph_prox_grid_2d(PyArrayObject* y, double alpha, bool directed, doub
                             ((double *)PyArray_DATA(y_flatten)) + PyArray_DIM(y_flatten, 0));
   auto n = y_data.size();
 
+  // Make a 2-d grid graph
   std::vector<std::pair<std::size_t, std::size_t>> edges;
   for (std::size_t i = 0; i < n_0; ++i) {
     for (std::size_t j = 0; j < n_1; ++j) {
       int node_id = n_0 * i + j;
       if (j < n_1 - 1) {
         edges.push_back(std::make_pair(node_id, node_id + 1));
+        //std::cout << "add edge (" << node_id << ", " << node_id + 1 << ")" << std::endl;
       }
       if (i < n_0 - 1) {
         edges.push_back(std::make_pair(node_id, node_id + n_0));
+        //std::cout << "add edge (" << node_id << ", " << node_id + n_0 << ")" << std::endl;
       }
     }
   }
+
   std::vector<double> capacities(edges.size(), alpha);
   for (auto& y_i: y_data) {
     y_i = -y_i;
@@ -135,7 +139,7 @@ PyObject* graph_prox_grid_2d(PyArrayObject* y, double alpha, bool directed, doub
   npy_intp dims[1] = { (npy_intp) n };
   PyObject* py_base = PyArray_SimpleNew(1, dims, NPY_FLOAT64);
   std::copy(base.begin(), base.end(), (double*)PyArray_DATA(py_base));
-  PyArray_Dims shape = { y_dims, (int) n };
+  PyArray_Dims shape = { (npy_intp*) y_dims, 2 };
   py_base = PyArray_Newshape((PyArrayObject*)py_base, &shape, NPY_CORDER);
   Py_XDECREF(y_flatten);
   return py_base;
@@ -166,7 +170,7 @@ PyObject* graph_prox(PyArrayObject* y, double alpha, PyObject* edge_list, PyObje
   auto solution = solver.Solve(F);
   std::vector<double> base(n);
   for (std::size_t i = 0; i < n; ++i) {
-    base[i] = - solution[i];
+    base[i] = - solution[i] * alpha;
   }
 
   npy_intp dims[1] = { (npy_intp) n };
